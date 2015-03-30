@@ -1,5 +1,8 @@
 package mp2;
 
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.concurrent.ConcurrentHashMap;
 
 /*
@@ -23,6 +26,14 @@ public class Node extends Thread {
 	//To increase efficiency just a little, when a key is moved from one Node
 	//    to another, it can just be marked false in the first Node's hashmap
 	ConcurrentHashMap<Integer,Boolean> keys;
+	
+	//The socket that the Node listens on
+	private Server server;
+	
+	//successor is implicitly the first entry in the finger table
+	private NodeConnection [] finger_table;
+	
+	private NodeConnection predecessor;
 	
 	
 	protected Node () {
@@ -57,8 +68,6 @@ public class Node extends Thread {
 			keys.put(key, true);
 		}
 		
-		//TODO: initialize finger table
-		
 		new Thread(this, "Nodeprime"+id).start();
 	}
 
@@ -68,8 +77,66 @@ public class Node extends Thread {
 	
 
 	public void run() {
+		
+		initializeSockets();
+		
 		//TODO: connect to other nodes (using methods in PeerToPeerLookupService)
 		//TODO: acquire correct keys from other nodes (special case: node 0's first state)
+		
+	}
+	
+
+	private void initializeSockets() {
+		
+		server = new Server(this);		
+		finger_table = new NodeConnection[8];
+		
+		if (initialnode) { //this is the first node in the network
+			//Logically, all connections are to ourself here
+			for (int i=0; i<8; i++) {
+				finger_table[i] = null;
+			}
+			predecessor = null;
+		}
+		else {
+			
+			//At this point, we only know node 0 exists; make a socket connection with 0
+			Socket nprime = null;
+			try {
+				nprime = new Socket("127.0.0.1", 7500);
+				NodeConnection nprimep = new NodeConnection(this, nprime, 0);
+			} catch (Exception e) {
+				System.out.println("Failed to connect to n\'");
+				e.printStackTrace();
+				return;
+			}
+
+			
+			//init_finger_table:
+				//finger[1].node = 0.find_successor(finger[1].start);
+				//predecessor = successor.predecessor = this;
+				//successor.predecessor = this;
+				//for i=1 to m-1 (7)
+					//if (finger[i+1].start >= this.id && finger[i+1].start < finger[i].node.id)
+						//finger[i+1].node = finger[i].node;
+					//else
+						//finger[i+1].node = 0.find_successor(finger[i+1].start);
+			
+			//update_others:
+				//for i=1 to m (8)
+					//p = find_predecessor(this.id - 2^(i-1));
+					//p.update_finger_table(this,i);
+		}
+		
+	}
+	
+	
+	/*
+	 * Receive and process a message from node with parameter recvId
+	 * Keep a reference to the NodeConnection it came from in case
+	 * a reply is required
+	 */
+	protected void receive(NodeConnection recvNode, int recvId, String msg) {
 		
 	}
 
