@@ -54,12 +54,15 @@ public class PeerToPeerLookupService {
 			}
 			
 		}
+		
+		
+		//TODO: declare other class member objects
 
 	}
 	
 	
 	public void start() {
-		// TODO Auto-generated method stub
+		//TODO: initialize class member objects
 		
 		
 	}

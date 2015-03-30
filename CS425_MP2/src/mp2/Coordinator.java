@@ -21,7 +21,7 @@ public class Coordinator extends Thread {
 	
 	
 	public void run() {
-		// TODO Auto-generated method stub
+		//TODO: start reading from System.in and update cmdComplete like mp1.CommandInputThread did
 		
 	}
 	

@@ -33,11 +33,14 @@ public class Node extends Thread {
 		this.id = id;
 		this.p2p = p2p;
 		
+		//TODO: declare other class member objects
+		
 		new Thread(this, "Node"+id).start();
 	}
 	
 	public void run() {
-		// TODO Auto-generated method stub
+		//TODO: connect to other nodes (using methods in PeerToPeerLookupService)
+		//TODO: acquire correct keys from other nodes (special case: node 0's first state)
 		
 	}
 
