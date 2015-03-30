@@ -19,14 +19,13 @@ public class PeerToPeerLookupService {
 	//    for simplicity (consider int for loops)
 	
 	//Each node in the Chord system is represented as a Node thread in this
-	//    ArrayList with initial setup of 256 slots, using the "set" method
-	//    to add/leave new nodes in the system, and the "valid" field in
-	//    the Node class to find a node and see if it's valid
-	//    This implementation also helps with show-all
-	protected ArrayList<Node> nodes = new ArrayList<Node>(256);
+	//    ArrayList, being removed from the ArrayList when it leaves, and
+	//    being added to the ArrayList when it joins
+	protected ArrayList<Node> nodes;
 	
 	//Coordinator thread to get and execute commands; should not be started
-	//    until node 0 has been set up
+	//    until node 0 has been set up (which shouldn't take that much time,
+	//    so maybe we won't worry about it)
 	protected Coordinator coord;
 
 
@@ -55,15 +54,19 @@ public class PeerToPeerLookupService {
 			
 		}
 		
-		
-		//TODO: declare other class member objects
+		nodes = new ArrayList<Node>();
 
 	}
 	
 	
 	public void start() {
-		//TODO: initialize class member objects
+
+		//indicate to Node that it doesn't join normally
+		Node nprime = new Node(0, this, "initial");
+		nodes.add(nprime);
 		
+		//Start Coordinator thread after node 0 is created
+		coord = new Coordinator(this);
 		
 	}
 
