@@ -3,12 +3,16 @@ package mp2;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
 
 /*
  * Thread to read commands from command line and perform necessary
  * actions in response
  */
 public class Coordinator extends Thread {
+	
+	protected int m;
 	
 	//The Chord system that this Coordinator belongs to
 	protected PeerToPeerLookupService p2p;
@@ -22,6 +26,7 @@ public class Coordinator extends Thread {
 	
 	protected Coordinator (PeerToPeerLookupService p2p) {
 		this.p2p = p2p;
+		this.m = p2p.m;
 		cmdin = new BufferedReader(new InputStreamReader(System.in));
 		
 		new Thread(this, "CommandInput").start();
@@ -127,7 +132,7 @@ public class Coordinator extends Thread {
 			return;
 		}
 		
-		//TODO: according to Piazza post @345, this may have to involve messages
+		//according to Piazza post @350, this probably doesn't involve messages
 		//Check to see that node id doesn't already exist in system
 		boolean exists = false;
 		for (int i=0; i<p2p.nodes.size(); i++) {
@@ -143,7 +148,7 @@ public class Coordinator extends Thread {
 		}
 		
 		//Create a thread that will simulate behavior of node with requested id
-		Node p = new Node (id, p2p);
+		Node p = new Node(id, p2p);
 		
 		//add the new Node to p2p's ArrayList for administrative purposes (?)
 		p2p.nodes.add(p);
@@ -171,22 +176,25 @@ public class Coordinator extends Thread {
 			return;
 		}
 		
-		//TODO: according to Piazza post @345, this may have to involve messages
+		//according to Piazza post @350, this probably doesn't involve messages
 		//Check to see that node id exists in system
-		boolean exists = false;
+		int nodeIdx = -1;
 		for (int i=0; i<p2p.nodes.size(); i++) {
 			Node n = p2p.nodes.get(i);
 			int nodeid = n.getNodeId();
-			if (id == nodeid)
-				exists = true;
+			if (id == nodeid) {
+				nodeIdx = i;
+			}
 		}
-		if (!exists) {
+		if (nodeIdx == -1) {
 			System.out.println("Node with id "+id+" does not exist in the system; try again");
 			cmdComplete = true;
 			return;
 		}
 		
-		//TODO: send find message to node id
+		//call find method on node id
+		//TODO: check Piazza posts @328 @330 to see if method should be called on 0 or id
+		p2p.nodes.get(nodeIdx).find(key);
 		
 	}
 	
@@ -206,7 +214,14 @@ public class Coordinator extends Thread {
 			return;
 		}
 		
-		//TODO: according to Piazza post @345, this may have to involve messages
+		//Do not allow node 0 to leave the system (Piazza post @328 says assumed node 0 is always there)
+		if (id == 0) {
+			System.out.println("Node 0 is assumed to always be there in Chord; try again");
+			cmdComplete = true;
+			return;
+		}
+		
+		//according to Piazza post @350, this probably doesn't involve messages
 		//Check to see that node id exists in system
 		boolean exists = false;
 		for (int i=0; i<p2p.nodes.size(); i++) {
@@ -221,7 +236,8 @@ public class Coordinator extends Thread {
 			return;
 		}
 		
-		//TODO: send leave message to node id
+		//TODO: call leave method on node id
+		//TODO: check Piazza posts @328 @330 to see if method should be called on 0 or id
 		
 	}
 	
@@ -235,7 +251,7 @@ public class Coordinator extends Thread {
 	 * as true
 	 */
 	protected void showall() {
-		//TODO: send show all message to node 0
+		//TODO: call show all method on node 0
 	}
 	
 	
@@ -248,7 +264,7 @@ public class Coordinator extends Thread {
 	 */
 	protected void show(int id) {
 		
-		//TODO: according to Piazza post @345, this may have to involve messages
+		//according to Piazza post @350, this probably doesn't involve messages
 		//Check to see that node id exists in system
 		boolean exists = false;
 		for (int i=0; i<p2p.nodes.size(); i++) {
@@ -263,7 +279,8 @@ public class Coordinator extends Thread {
 			return;
 		}
 		
-		//TODO: send show message to node id
+		//TODO: call show method on node id
+		//TODO: check Piazza posts @328 @330 to see if method should be called on 0 or id
 		
 	}
 	

@@ -10,6 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Node extends Thread {
 	
+	protected int m;
+	
 	//Indicates whether this is an active node
 	//Used in full-capacity ArrayList in PeerToPeerLookupService
 	protected boolean valid;
@@ -31,9 +33,9 @@ public class Node extends Thread {
 	private Server server;
 	
 	//successor is implicitly the first entry in the finger table
-	private NodeConnection [] finger_table;
+	private Finger [] finger_table;
 	
-	private NodeConnection predecessor;
+	private int predecessor;
 	
 	
 	protected Node () {
@@ -45,6 +47,7 @@ public class Node extends Thread {
 		this.valid = true;
 		this.id = id;
 		this.p2p = p2p;
+		this.m = p2p.m;
 		
 		//TODO: declare other class member objects
 		
@@ -58,6 +61,7 @@ public class Node extends Thread {
 		this.valid = true;
 		this.id = id;
 		this.p2p = p2p;
+		this.m = p2p.m;
 		this.initialnode = true; //check this in run()
 		
 		keys = new ConcurrentHashMap<Integer,Boolean>();
@@ -78,6 +82,8 @@ public class Node extends Thread {
 
 	public void run() {
 		
+		initializeFingerTable();
+		
 		initializeSockets();
 		
 		//TODO: connect to other nodes (using methods in PeerToPeerLookupService)
@@ -86,30 +92,30 @@ public class Node extends Thread {
 	}
 	
 
+	private void initializeFingerTable() {
+		finger_table = new Finger[m];
+		for (int i=0; i<8; i++) {
+			finger_table[i] = new Finger();
+			finger_table[i].start = Finger.calculateStart(id, i, m);
+		}
+		
+	}
+
 	private void initializeSockets() {
 		
-		server = new Server(this);		
-		finger_table = new NodeConnection[8];
+		server = new Server(this);
 		
 		if (initialnode) { //this is the first node in the network
 			//Logically, all connections are to ourself here
 			for (int i=0; i<8; i++) {
-				finger_table[i] = null;
+				finger_table[i].node = 0;
 			}
-			predecessor = null;
+			predecessor = 0;
 		}
+		
 		else {
 			
-			//At this point, we only know node 0 exists; make a socket connection with 0
-			Socket nprime = null;
-			try {
-				nprime = new Socket("127.0.0.1", 7500);
-				NodeConnection nprimep = new NodeConnection(this, nprime, 0);
-			} catch (Exception e) {
-				System.out.println("Failed to connect to n\'");
-				e.printStackTrace();
-				return;
-			}
+			//At this point, we only know node 0 exists
 
 			
 			//init_finger_table:
@@ -132,12 +138,37 @@ public class Node extends Thread {
 	
 	
 	/*
-	 * Receive and process a message from node with parameter recvId
-	 * Keep a reference to the NodeConnection it came from in case
-	 * a reply is required
+	 * Receive and process a message sent to this Node
 	 */
-	protected void receive(NodeConnection recvNode, int recvId, String msg) {
+	protected void receive(String msg) {
+		System.out.println("Node "+id+" received \""+msg+"\"");
+	}
+	
+	
+	/*
+	 * This node has been asked to locate key
+	 * Send query to largest successor/finger entry <= key
+	 * (if none exist, send query to successor(this))
+	 * TODO:
+	 * Once the proper procedure has finished, Node must mark cmdComplete
+	 * as true
+	 */
+	protected void find(int key) {
+		//find_successor(key):
+			//nprime = find_predecessor(key)
+			//return nprime.successor;
 		
+		//find_predecessor(id):
+			//nprime = this;
+			//while (id <= nprime.id || id > nprime.successor.id)
+				//nprime = nprime.closest_preceding_finger(id);
+			//return nprime;
+		
+		//closest_preceding_finger(id):
+			//for i=m (8) to 1
+				//if (finger[i].node.id > this.id && finger[i].node.id < id)
+					//return finger[i].node;
+			//return this;
 	}
 
 }

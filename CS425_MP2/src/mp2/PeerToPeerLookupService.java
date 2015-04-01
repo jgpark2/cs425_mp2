@@ -2,14 +2,18 @@ package mp2;
 
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.ArrayList;
 
 /*
  * TODO: give instructions on how to run this code in cs425_mp2/instructions.txt
  */
 public class PeerToPeerLookupService {
+	
+	protected static int m = 8;
 	
 	//This is where all output from "show" commands goes
 	//To write to: out.write(strtowrite+"\n"); //it needs this newline!
@@ -27,6 +31,8 @@ public class PeerToPeerLookupService {
 	//    until node 0 has been set up (which shouldn't take that much time,
 	//    so maybe we won't worry about it)
 	protected Coordinator coord;
+	
+	public volatile int messageCount;
 
 
 	public static void main(String[] args) {
@@ -55,6 +61,7 @@ public class PeerToPeerLookupService {
 		}
 		
 		nodes = new ArrayList<Node>();
+		messageCount = 0;
 
 	}
 	
@@ -68,6 +75,58 @@ public class PeerToPeerLookupService {
 		//Start Coordinator thread after node 0 is created
 		coord = new Coordinator(this);
 		
+	}
+	
+	
+	/*
+	 * Method used by any Node to send a message through sockets
+	 * Eliminates confusion about sockets closing on one or both ends
+	 * TODO: modify Server class to match this
+	 * TODO: maybe append sendId to end of message before sending?
+	 */
+	protected int send(String msg, int sendId, int recvId) {
+		int ret = -1;
+		
+		//Check to see that node id exists in system
+		int nodeIdx = -1;
+		for (int i=0; i<nodes.size(); i++) {
+			Node n = nodes.get(i);
+			int nodeid = n.getNodeId();
+			if (recvId == nodeid) {
+				nodeIdx = i;
+			}
+		}
+		if (nodeIdx == -1) {
+//			System.out.println("Node with id "+recvId+" does not exist in the system; try again");
+			return -1;
+		}
+		
+		Socket socket = null;
+		PrintWriter outs = null;
+		
+		try {
+			socket = new Socket("127.0.0.1", 7500+recvId);
+			outs = new PrintWriter(socket.getOutputStream(), true);
+			outs.println(msg);
+			ret = 0;
+
+		} catch (Exception e) {
+			System.out.println("Failed to connect to node "+recvId);
+			e.printStackTrace();
+			ret = -1;
+		}
+				
+		if (socket != null) {
+			try {
+				socket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		if (outs != null)
+			outs.close();
+				
+		return ret;
 	}
 
 }

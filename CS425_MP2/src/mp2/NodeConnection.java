@@ -19,7 +19,7 @@ public class NodeConnection extends Thread {
 	private PrintWriter outs;
 	
 	//Id of the Node on the other end
-	private int recvId;
+	protected int recvId;
 	
 	
 	protected NodeConnection(Node node, Socket socket, int recvId) {
@@ -57,7 +57,7 @@ public class NodeConnection extends Thread {
 				//TODO: maybe some input gets handled here, maybe not...
 				if (input.compareTo("done") == 0)
 					break;
-				node.receive(this, recvId, input);
+				node.receive(input);
 			}
 			
 		} catch (IOException e) {

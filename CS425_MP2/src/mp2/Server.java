@@ -11,6 +11,8 @@ import java.net.Socket;
  */
 public class Server extends Thread {
 	
+	protected int m;
+	
 	//creator of this thread
 	private Node node;
 	//The socket that the Node listens on
@@ -19,6 +21,7 @@ public class Server extends Thread {
 	
 	protected Server(Node node) {
 		this.node = node;
+		this.m = node.m;
 		
 		try {
 			server = new ServerSocket(7500 + node.getNodeId()); //guarantees unique port
@@ -61,13 +64,12 @@ public class Server extends Thread {
 		BufferedReader ins = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		
 		String input = "";
-		while ((input = ins.readLine())==null) {} //get recvId from connecting Node
-		int recvId = Integer.parseInt(input);
+		while ((input = ins.readLine())==null) {} //get message from connecting Node
 		
-		//keep the connection open on this socket to finish the incoming requests
-		new NodeConnection(node, socket, recvId);
+		node.receive(input);
 		
 		ins.close();
+		socket.close();
 	}
 
 }
