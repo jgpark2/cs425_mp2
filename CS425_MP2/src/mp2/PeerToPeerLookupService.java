@@ -81,8 +81,6 @@ public class PeerToPeerLookupService {
 	/*
 	 * Method used by any Node to send a message through sockets
 	 * Eliminates confusion about sockets closing on one or both ends
-	 * TODO: modify Server class to match this
-	 * TODO: maybe append sendId to end of message before sending?
 	 */
 	protected int send(String msg, int sendId, int recvId) {
 		int ret = -1;
@@ -127,6 +125,21 @@ public class PeerToPeerLookupService {
 			outs.close();
 				
 		return ret;
+	}
+	
+	
+	/*
+	 * Determines if x is on the interval (a,b) (exclusive) mod 2^m
+	 */
+	protected boolean insideInterval(int x, int a, int b) {
+		if (b < a) { //a < 2^m && b >= 0
+			
+			if (x < a)
+				x += (int)Math.pow(2, m);
+			
+			b += (int)Math.pow(2, m);
+		}
+		return (x > a) && (x < b);
 	}
 
 }
