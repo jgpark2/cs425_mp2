@@ -57,7 +57,7 @@ public class NodeConnection extends Thread {
 				//TODO: maybe some input gets handled here, maybe not...
 				if (input.compareTo("done") == 0)
 					break;
-				node.receive(input);
+				//node.receive(input);
 			}
 			
 		} catch (IOException e) {

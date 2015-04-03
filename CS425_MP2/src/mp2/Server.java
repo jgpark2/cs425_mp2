@@ -113,7 +113,7 @@ public class Server extends Thread {
 			
 			if (words[1].compareTo("find_successor") == 0) {
 				System.out.println("Node "+node.getNodeId()+" is processing a find_successor req message: \""+msg+"\"");
-				//TODO create waiting thread to get all the answers to this,
+				//create waiting thread to get all the answers to this,
 				//This thread will then call p2p.send so Server doesn't have to wait
 				new AlgorithmWaitingThread(node, words[1], msg);
 			}
@@ -134,6 +134,11 @@ public class Server extends Thread {
 				System.out.println("Node "+node.getNodeId()+" is processing a predecessor req message: \""+msg+"\"");
 				returnValue = node.getPredecessor();
 				sendReturnValue = true;
+			}
+			
+			else if (words[1].compareTo("set_predecessor") == 0) {
+				System.out.println("Node "+node.getNodeId()+" is processing a set_predecessor req message: \""+msg+"\"");
+				node.predecessor = Integer.parseInt(words[3]);
 			}
 			
 			if (sendReturnValue) {
