@@ -22,6 +22,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * predecessor:
  * 		req: "req predecessor <reqcnt> <placeholder> <sendId>"
  * 		ack: "ack predecessor <reqcnt> <placeholder> <return_value> <sendId>"
+ * set_predecessor: we don't need an ack for this
+ * 		req: "req set_predecessor <reqcnt> <parameter_pred> <sendId>"
+ * update_finger_table: we don't need an ack for this
+ * 		req: "req update_finger_table <parameter_s> <parameter_i> <sendId>
  */
 public class Node extends Thread {
 	
@@ -141,14 +145,47 @@ public class Node extends Thread {
 			String reply_id = find_successor_reply.validacks.get(0);
 			finger_table[0].node = Integer.parseInt(reply_id);
 			
-				//predecessor = successor.predecessor;
-				//successor.predecessor = this;
-				//for i=1 to m-1 (7)
-					//if (finger[i+1].start >= this.id && finger[i+1].start < finger[i].node.id)
-						//finger[i+1].node = finger[i].node;
-					//else
-						//finger[i+1].node = 0.find_successor(finger[i+1].start);
+			//predecessor = successor.predecessor;
+			reqcnt++;
+			String pred_req = "predecessor "+reqcnt+" " + this.id;
+			AckTracker predecessor_reply = new AckTracker(1);
+			recvacks.put(pred_req, predecessor_reply); //wait for a single reply
+			p2p.send("req " + pred_req + " " + this.id, this.id, finger_table[0].node);
 			
+			//wait on reply
+			while (predecessor_reply.toreceive > 0) {}
+			
+			String pred_reply_id = predecessor_reply.validacks.get(0);
+			this.predecessor = Integer.parseInt(pred_reply_id);
+			
+			//successor.predecessor = this; //we don't need to wait for a return value (ack)
+			String set_pred_req = "set_predecessor "+this.id+" "+this.id;
+			p2p.send("req " + set_pred_req + " " + this.id, this.id, finger_table[0].node);
+			
+			
+			for (int i=0; i<m-1; i++) {
+				
+				if (p2p.insideInterval(finger_table[i+1].start, this.id, finger_table[i].node)
+						|| finger_table[i+1].start == this.id) {
+					finger_table[i+1].node = finger_table[i].node;
+				}
+				
+				else {
+					//finger[i+1].node = 0.find_successor(finger[i+1].start);
+					reqcnt++;
+					String finger_suc_req = "find_successor "+reqcnt+" " + finger_table[i+1].start;
+					AckTracker finger_suc_reply = new AckTracker(1);
+					recvacks.put(finger_suc_req, finger_suc_reply); //wait for a single reply
+					p2p.send("req " + finger_suc_req + " " + this.id, this.id, 0);
+					
+					//wait on reply
+					while (finger_suc_reply.toreceive > 0) {}
+					
+					String finger_suc_reply_id = finger_suc_reply.validacks.get(0);
+					finger_table[i+1].node = Integer.parseInt(finger_suc_reply_id);
+				}
+				
+			}
 
 		}
 		
@@ -159,17 +196,45 @@ public class Node extends Thread {
 	 * Update all nodes whose finger tables should refer to this Node
 	 */
 	private void updateOthers() {
-		//update_others:
+
 		//for i=1 to m (8)
+		for (int i=0; i<m; i++) {
+			
 			//p = find_predecessor(this.id - 2^(i-1));
+			int p = findPredecessor(this.id - (int)Math.pow(2,i));
+			
 			//p.update_finger_table(this,i);
-		
-		for(int i=0; i<bound; ++i) {
-			//find last node p whose ith finger might be n
-			int p_id = find_predecessor(id-2^(i-1));
-			p_id. update_finger_table(id,i); //Call to socket
+			if (p == this.id) { //call our method
+				this.updateFingerTable(this.id, i);
+			}
+			else { //don't need to wait for reply
+				String update_req = "update_finger_table "+this.id+" "+i;
+				p2p.send("req " + update_req + " " + this.id, this.id, p);
+			}
+			
 		}
 		
+		
+		
+		//for(int i=0; i<bound; ++i) {
+			//find last node p whose ith finger might be n
+		//	int p_id = find_predecessor(id-2^(i-1));
+		//	p_id. update_finger_table(id,i); //Call to socket
+		//}
+		
+	}
+	
+	
+	/*
+	 * If s is ith finger of this Node, update our finger table with s
+	 */
+	private void updateFingerTable(int s, int i) {
+//		if(s in [id, finger_table.get(i).id)) {
+//			finger_table.get(i).id = s;
+//			int p = predecessor;
+//			p .update_finger_table(s, i); //Call to socket
+//		}
+	
 	}
 	
 	
@@ -323,13 +388,4 @@ public class Node extends Thread {
 		int predecessor = findPredecessor(id);
 	}
 	
-	//if s is ith finger of n, update n's finger table with s
-	private void updateFingerTable(int s, int i) {
-		/*if(s in [id, finger_table.get(i).id]) {
-			finger_table.get(i).id = s;
-			int p = predecessor;
-			p .update_finger_table(s, i); //Call to socket
-		}*/
-	
-	}
 }
