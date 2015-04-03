@@ -55,7 +55,7 @@ public class Node extends Thread {
 	protected ConcurrentHashMap<String, AckTracker> recvacks;
 	
 	//Number of operation requests made by this Node
-	protected int reqcnt = 0;
+	protected volatile int reqcnt = 0;
 	
 	
 	protected Node () {
