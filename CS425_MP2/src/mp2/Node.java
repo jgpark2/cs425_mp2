@@ -1,5 +1,6 @@
 package mp2;
 
+import java.util.ArrayList;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -31,6 +32,8 @@ public class Node extends Thread {
 	protected boolean valid;
 	private int id;
 	
+	private final int BOUND = 256;
+	private final int TABLE_SIZE = 8; //lg(256)
 	private boolean initialnode; //indicates first node in system
 	
 	//The Chord system that this Node belongs to
@@ -43,13 +46,16 @@ public class Node extends Thread {
 	//    to another, it can just be marked false in the first Node's hashmap
 	ConcurrentHashMap<Integer,Boolean> keys;
 	
+	//ArrayList<TableEntry> finger_table = new ArrayList<TableEntry>(TABLE_SIZE);
+	private Finger [] finger_table;
+	public int predecessor = -1;
+	
 	//The socket that the Node listens on
 	private Server server;
 	
 	//successor is implicitly the first entry in the finger table
-	private Finger [] finger_table;
-	
-	private int predecessor;
+	//private Finger [] finger_table;
+	//private int predecessor;
 	
 	//Map that tracks how many acks we have received/are yet to receive for a message
 	protected ConcurrentHashMap<String, AckTracker> recvacks;
@@ -58,29 +64,31 @@ public class Node extends Thread {
 	protected volatile int reqcnt = 0;
 	
 	
-	protected Node () {
-		this.valid = false;
-		this.id = -1;
-	}
-	
 	protected Node (int id, PeerToPeerLookupService p2p) {
-		this.valid = true;
 		this.id = id;
 		this.initialnode = false;
 		this.p2p = p2p;
 		this.m = p2p.m;
 		
+		
 		keys = new ConcurrentHashMap<Integer,Boolean>();
 		recvacks = new ConcurrentHashMap<String, AckTracker>();
 		
-		new Thread(this, "Node"+this.id).start();
+		//ID 0 is initialized with the system and never "joins", so we can initialize all its keys to true
+		for(int i=0; i<BOUND; ++i) {
+			keys.put(i, (id==0));
+		}
+		
+		//TODO: declare other class member objects
+		
+		new Thread(this, "Node"+id).start();
 	}
 	
 	/*
 	 * Special constructor for the first node in the Chord system
 	 */
 	protected Node(int id, PeerToPeerLookupService p2p, String string) {
-		this.valid = true;
+		//this.valid = true;
 		this.id = id;
 		this.p2p = p2p;
 		this.m = p2p.m;
@@ -113,6 +121,12 @@ public class Node extends Thread {
 	
 
 	public void run() {
+		//TODO: connect to other nodes (using methods in PeerToPeerLookupService)
+		
+		//Join Algorithm
+//		this.onJoin(0);
+		
+		//TODO: acquire correct keys from other nodes (special case: node 0's first state)
 		
 		server = new Server(this);
 		
@@ -325,5 +339,52 @@ public class Node extends Thread {
 		
 		return this.id;
 	}
-
+/*
+	private void onJoin(int introducer) {
+		if(id == introducer) {
+			for(int i=0; i<TABLE_SIZE; ++i)
+				finger_table.add(new TableEntry(0));
+			predecessor = 0;
+		}
+		else {
+			init_finger_table(0);
+			update_others();
+			//Move Keys...
+		}
+		
+		int predecessor = find_predecessor(id);
+	}
+	
+	private void init_finger_table() {
+		
+	}
+	
+	private void update_others() {
+		for(int i=0; i<BOUND; ++i) {
+			//find last node p whose ith finger might be n
+			int p_id = find_predecessor(id-2^(i-1));
+			p_id. update_finger_table(id,i); //Call to socket
+		}
+		
+	}
+	
+	//if s is ith finger of n, update n's finger table with s
+	private void update_finger_table(int s, int i) {
+		if(s in [id, finger_table.get(i).id]) {
+			finger_table.get(i).id = s;
+			int p = predecessor;
+			p .update_finger_table(s, i); //Call to socket
+		}
+	
+	}
+	
+	private int find_successor(int id) {
+		
+	}
+	
+	private int find_predecessor(int id) {
+		
+	}
+	*/
+	
 }

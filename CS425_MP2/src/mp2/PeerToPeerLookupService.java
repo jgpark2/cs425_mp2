@@ -77,7 +77,6 @@ public class PeerToPeerLookupService {
 		
 	}
 	
-	
 	/*
 	 * Method used by any Node to send a message through sockets
 	 * Eliminates confusion about sockets closing on one or both ends
@@ -159,6 +158,5 @@ public class PeerToPeerLookupService {
 		}
 		return ((x > a) && (x < b)) || (x==b);
 	}
-
 
 }
