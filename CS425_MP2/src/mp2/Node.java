@@ -163,6 +163,13 @@ public class Node extends Thread {
 		//for i=1 to m (8)
 			//p = find_predecessor(this.id - 2^(i-1));
 			//p.update_finger_table(this,i);
+		
+		for(int i=0; i<bound; ++i) {
+			//find last node p whose ith finger might be n
+			int p_id = find_predecessor(id-2^(i-1));
+			p_id. update_finger_table(id,i); //Call to socket
+		}
+		
 	}
 	
 	
@@ -300,52 +307,29 @@ public class Node extends Thread {
 		
 		return this.id;
 	}
-/*
+
 	private void onJoin(int introducer) {
 		if(id == introducer) {
 			for(int i=0; i<m; ++i)
-				finger_table.add(new TableEntry(0));
+				//finger_table.add(new TableEntry(0));
 			predecessor = 0;
 		}
 		else {
-			init_finger_table(0);
-			update_others();
+			initializeFingerTable();
+			updateOthers();
 			//Move Keys...
 		}
 		
-		int predecessor = find_predecessor(id);
-	}
-	
-	private void init_finger_table() {
-		
-	}
-	
-	private void update_others() {
-		for(int i=0; i<bound; ++i) {
-			//find last node p whose ith finger might be n
-			int p_id = find_predecessor(id-2^(i-1));
-			p_id. update_finger_table(id,i); //Call to socket
-		}
-		
+		int predecessor = findPredecessor(id);
 	}
 	
 	//if s is ith finger of n, update n's finger table with s
-	private void update_finger_table(int s, int i) {
-		if(s in [id, finger_table.get(i).id]) {
+	private void updateFingerTable(int s, int i) {
+		/*if(s in [id, finger_table.get(i).id]) {
 			finger_table.get(i).id = s;
 			int p = predecessor;
 			p .update_finger_table(s, i); //Call to socket
-		}
+		}*/
 	
 	}
-	
-	private int find_successor(int id) {
-		
-	}
-	
-	private int find_predecessor(int id) {
-		
-	}
-	*/
-	
 }
