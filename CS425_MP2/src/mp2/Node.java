@@ -89,17 +89,11 @@ public class Node extends Thread {
 
 	public void run() {
 		
+		//TODO: connect to other nodes (using methods in PeerToPeerLookupService)
 		server = new Server(this);
 		
-		initializeFingerTable();
-		
-		if (!initialnode) {
-			updateOthers();
-			//TODO: acquire correct keys from other nodes
-			//move keys in (predecessor, this.id] from successor
-		}
-
-		
+		//Join Algorithm
+		this.onJoin();
 	}
 	
 
@@ -123,7 +117,6 @@ public class Node extends Thread {
 			}
 			predecessor = 0;
 		}
-		
 		else {
 			
 			//At this point, we only know node 0 exists
@@ -159,15 +152,11 @@ public class Node extends Thread {
 	 * Update all nodes whose finger tables should refer to this Node
 	 */
 	private void updateOthers() {
-		//update_others:
-		//for i=1 to m (8)
-			//p = find_predecessor(this.id - 2^(i-1));
-			//p.update_finger_table(this,i);
-		
-		for(int i=0; i<bound; ++i) {
+		for(int i=1; i<m; ++i) {
 			//find last node p whose ith finger might be n
-			int p_id = find_predecessor(id-2^(i-1));
-			p_id. update_finger_table(id,i); //Call to socket
+			int p_id = findPredecessor(id-2^(i-1));
+			//p_id.updateFingerTable(id,i);
+			p2p.send("req update "+id+" "+i, id, i);
 		}
 		
 	}
@@ -308,28 +297,27 @@ public class Node extends Thread {
 		return this.id;
 	}
 
-	private void onJoin(int introducer) {
-		if(id == introducer) {
-			for(int i=0; i<m; ++i)
-				//finger_table.add(new TableEntry(0));
-			predecessor = 0;
-		}
-		else {
-			initializeFingerTable();
+	private void onJoin() {
+		initializeFingerTable();
+		
+		if (!initialnode) {
 			updateOthers();
-			//Move Keys...
+			//TODO: acquire correct keys from other nodes
+			//move keys in (predecessor, this.id] from successor
+			
 		}
 		
-		int predecessor = findPredecessor(id);
+		//predecessor = findPredecessor(id);
 	}
 	
 	//if s is ith finger of n, update n's finger table with s
 	private void updateFingerTable(int s, int i) {
-		/*if(s in [id, finger_table.get(i).id]) {
-			finger_table.get(i).id = s;
+		if(s>=id && s<finger_table[i].node) {
+			finger_table[i].node = s;
 			int p = predecessor;
-			p .update_finger_table(s, i); //Call to socket
-		}*/
+			//p.update_finger_table(s, i);
+			p2p.send("req update "+s+" "+i, id, i);
+		}
 	
 	}
 }
