@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Iterator;
+import java.util.Set;
+
 
 /*
  * Thread to accept connections from other Nodes
@@ -141,6 +144,30 @@ public class Server extends Thread {
 				node.predecessor = Integer.parseInt(words[3]);
 			}
 			
+			else if (words[1].compareTo("transfer_keys") == 0) {
+				//move keys in (range_start, sendId] to the sendId
+				int range_start = Integer.parseInt(words[3]);
+				String keysReturnValue = new String();
+				
+				Set<Integer> keyset = node.keys.keySet();
+				Iterator<Integer> it = keyset.iterator();
+				while (it.hasNext()) {
+					Integer key = it.next();
+					if (node.p2p.insideHalfInclusiveInterval(key.intValue(), range_start, sendId)) {
+						//take it out of our keys
+						node.keys.put(key, false);
+						//add it to keysReturnValue
+						keysReturnValue = keysReturnValue + key.toString() + " ";
+					}
+				}
+				
+				if (keysReturnValue.compareTo("") != 0)
+					keysReturnValue = keysReturnValue.substring(0, keysReturnValue.length()-1);
+				
+				String sendReply = "ack " + msgId + " " + keysReturnValue;
+				node.p2p.send(sendReply + " " + node.getNodeId(), node.getNodeId(), sendId);
+			}
+			
 			if (sendReturnValue) {
 				String sendReply = "ack " + msgId + " " + returnValue;
 				node.p2p.send(sendReply + " " + node.getNodeId(), node.getNodeId(), sendId);
@@ -170,6 +197,14 @@ public class Server extends Thread {
 			else if (words[1].compareTo("predecessor") == 0) {
 				System.out.println("Node "+node.getNodeId()+" is processing a predecessor ack message: \""+msg+"\"");
 				updaterecvacks = true;
+			}
+			
+			else if (words[1].compareTo("transfer_keys") == 0) {
+				System.out.println("Node "+node.getNodeId()+" is processing a transfer_keys ack message: \""+msg+"\"");
+				String ack = new String(msg);
+				AckTracker replyTracker = node.recvacks.get(msgId);
+				replyTracker.validacks.add(ack);
+				replyTracker.toreceive--;
 			}
 			
 			if (updaterecvacks) {
