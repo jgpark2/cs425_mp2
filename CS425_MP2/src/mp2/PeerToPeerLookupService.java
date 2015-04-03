@@ -107,6 +107,7 @@ public class PeerToPeerLookupService {
 			outs = new PrintWriter(socket.getOutputStream(), true);
 			outs.println(msg);
 			ret = 0;
+			messageCount++;
 
 		} catch (Exception e) {
 			System.out.println("Failed to connect to node "+recvId);
@@ -141,5 +142,23 @@ public class PeerToPeerLookupService {
 		}
 		return (x > a) && (x < b);
 	}
+	
+	/*
+	 * Determines if x is on the interval (a,b] mod 2^m
+	 * This case is necessary in findPredecessor when (nprime,nprimesuccessor] == (0,0]
+	 */
+	protected boolean insideHalfInclusiveInterval(int x, int a, int b) {
+		if (b == a)
+			return true;
+		if (b < a) { //a <= 2^m && b >= 0
+			
+			if (x < a)
+				x += (int)Math.pow(2, m);
+			
+			b += (int)Math.pow(2, m);
+		}
+		return ((x > a) && (x < b)) || (x==b);
+	}
+
 
 }

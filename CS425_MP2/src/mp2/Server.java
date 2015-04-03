@@ -115,6 +115,7 @@ public class Server extends Thread {
 				System.out.println("Node "+node.getNodeId()+" is processing a find_successor req message: \""+msg+"\"");
 				//TODO create waiting thread to get all the answers to this,
 				//This thread will then call p2p.send so Server doesn't have to wait
+				new AlgorithmWaitingThread(node, words[1], msg);
 			}
 			
 			else if (words[1].compareTo("successor") == 0) {

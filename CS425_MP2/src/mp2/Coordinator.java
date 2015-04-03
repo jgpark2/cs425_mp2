@@ -191,7 +191,6 @@ public class Coordinator extends Thread {
 		}
 		
 		//call find method on node id
-		//TODO: check Piazza posts @328 @330 to see if method should be called on 0 or id
 		p2p.nodes.get(nodeIdx).find(key);
 		
 	}
@@ -235,7 +234,6 @@ public class Coordinator extends Thread {
 		}
 		
 		//TODO: call leave method on node id
-		//TODO: check Piazza posts @328 @330 to see if method should be called on 0 or id
 		
 	}
 	
@@ -278,7 +276,6 @@ public class Coordinator extends Thread {
 		}
 		
 		//TODO: call show method on node id
-		//TODO: check Piazza posts @328 @330 to see if method should be called on 0 or id
 		
 	}
 	

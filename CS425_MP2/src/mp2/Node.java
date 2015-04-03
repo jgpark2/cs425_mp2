@@ -73,7 +73,7 @@ public class Node extends Thread {
 		keys = new ConcurrentHashMap<Integer,Boolean>();
 		recvacks = new ConcurrentHashMap<String, AckTracker>();
 		
-		new Thread(this, "Node"+id).start();
+		new Thread(this, "Node"+this.id).start();
 	}
 	
 	/*
@@ -96,11 +96,11 @@ public class Node extends Thread {
 		
 		recvacks = new ConcurrentHashMap<String, AckTracker>();
 		
-		new Thread(this, "Nodeprime"+id).start();
+		new Thread(this, "Nodeprime"+this.id).start();
 	}
 
 	protected int getNodeId() {
-		return id;
+		return this.id;
 	}
 	
 	protected int getSuccessor() {
@@ -138,7 +138,7 @@ public class Node extends Thread {
 		finger_table = new Finger[m];
 		for (int i=0; i<m; i++) {
 			finger_table[i] = new Finger();
-			finger_table[i].start = Finger.calculateStart(id, i, m);
+			finger_table[i].start = Finger.calculateStart(this.id, i, m);
 		}
 		
 		if (initialnode) { //this is the first node in the network
@@ -158,7 +158,7 @@ public class Node extends Thread {
 			String req = "find_successor "+reqcnt+" " + finger_table[0].start;
 			AckTracker find_successor_reply = new AckTracker(1);
 			recvacks.put(req, find_successor_reply); //wait for a single reply
-			p2p.send("req " + req + " " + id, id, 0);
+			p2p.send("req " + req + " " + this.id, this.id, 0);
 			
 			//wait on reply
 			while (find_successor_reply.toreceive > 0) {}
@@ -224,7 +224,7 @@ public class Node extends Thread {
 			String successorreq = "successor " +reqcnt+" " + nprime;
 			AckTracker successor_reply = new AckTracker(1);
 			recvacks.put(successorreq, successor_reply); //wait for a single reply
-			p2p.send("req " + successorreq + " " + id, id, nprime);
+			p2p.send("req " + successorreq + " " + this.id, this.id, nprime);
 			
 			//wait on reply
 			while (successor_reply.toreceive > 0) {}
@@ -245,7 +245,7 @@ public class Node extends Thread {
 		int nprime = this.id;
 		int nprimesuccessor = this.getSuccessor();
 		
-		while (!p2p.insideInterval(id, nprime, nprimesuccessor) && id != nprimesuccessor) {
+		while (!p2p.insideHalfInclusiveInterval(id, nprime, nprimesuccessor)) {
 			
 			if (nprime == this.id) { //call our method
 				nprime = this.closestPrecedingFinger(id);
@@ -260,7 +260,7 @@ public class Node extends Thread {
 					String successorreq = "successor " +reqcnt+" " + nprime;
 					AckTracker successor_reply = new AckTracker(1);
 					recvacks.put(successorreq, successor_reply); //wait for a single reply
-					p2p.send("req " + successorreq + " " + id, id, nprime);
+					p2p.send("req " + successorreq + " " + this.id, this.id, nprime);
 					
 					//wait on reply
 					while (successor_reply.toreceive > 0) {}
@@ -277,7 +277,7 @@ public class Node extends Thread {
 				String req = "closest_preceding_finger " +reqcnt+" " + id;
 				AckTracker closest_preceding_finger_reply = new AckTracker(1);
 				recvacks.put(req, closest_preceding_finger_reply); //wait for a single reply
-				p2p.send("req " + req + " " + id, id, nprime);
+				p2p.send("req " + req + " " + this.id, this.id, nprime);
 				
 				//wait on reply
 				while (closest_preceding_finger_reply.toreceive > 0) {}
@@ -295,7 +295,7 @@ public class Node extends Thread {
 					String successorreq = "successor " +reqcnt+" " + nprime;
 					AckTracker successor_reply = new AckTracker(1);
 					recvacks.put(successorreq, successor_reply); //wait for a single reply
-					p2p.send("req " + successorreq + " " + id, id, nprime);
+					p2p.send("req " + successorreq + " " + this.id, this.id, nprime);
 					
 					//wait on reply
 					while (successor_reply.toreceive > 0) {}
