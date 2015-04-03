@@ -51,7 +51,7 @@ public class Node extends Thread {
 	public int predecessor = -1;
 	
 	//The socket that the Node listens on
-	private Server server;
+	private Server server; 
 	
 	//successor is implicitly the first entry in the finger table
 	//private Finger [] finger_table;
