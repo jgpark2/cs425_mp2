@@ -69,7 +69,7 @@ public class PeerToPeerLookupService {
 	public void start() {
 
 		//indicate to Node that it doesn't join normally
-		Node nprime = new Node(0, this, "initial");
+		Node nprime = new Node(0, this);
 		nodes.add(nprime);
 		
 		//Start Coordinator thread after node 0 is created
