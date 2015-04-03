@@ -108,7 +108,7 @@ public class Server extends Thread {
 		if (words[0].compareTo("req") == 0) {
 			
 			int sendId = Integer.parseInt(sendIdString);
-			int returnValue = -1;
+			String returnValue = ""+ -1;
 			boolean sendReturnValue = false;
 			
 			if (words[1].compareTo("find_successor") == 0) {
@@ -120,25 +120,31 @@ public class Server extends Thread {
 			
 			else if (words[1].compareTo("successor") == 0) {
 				System.out.println("Node "+node.getNodeId()+" is processing a successor req message: \""+msg+"\"");
-				returnValue = node.getSuccessor();
+				returnValue = String.valueOf(node.getSuccessor());
 				sendReturnValue = true;
 			}
 			
 			else if (words[1].compareTo("closest_preceding_finger") == 0) {
 				System.out.println("Node "+node.getNodeId()+" is processing a closest_preceding_finger req message: \""+msg+"\"");
-				returnValue = node.closestPrecedingFinger(Integer.parseInt(words[3]));
+				returnValue = String.valueOf(node.closestPrecedingFinger(Integer.parseInt(words[3])));
 				sendReturnValue = true;
 			}
 			
 			else if (words[1].compareTo("predecessor") == 0) {
 				System.out.println("Node "+node.getNodeId()+" is processing a predecessor req message: \""+msg+"\"");
-				returnValue = node.getPredecessor();
+				returnValue = String.valueOf(node.getPredecessor());
 				sendReturnValue = true;
 			}
 			
 			else if (words[1].compareTo("set_predecessor") == 0) {
 				System.out.println("Node "+node.getNodeId()+" is processing a set_predecessor req message: \""+msg+"\"");
 				node.predecessor = Integer.parseInt(words[3]);
+			}
+			
+			else if (words[1].compareTo("move") == 0) {
+				System.out.println("Node "+node.getNodeId()+" is processing a move req message: \""+msg+"\"");
+				returnValue = node.moveKeysTo(sendId);
+				sendReturnValue = true;
 			}
 			
 			if (sendReturnValue) {

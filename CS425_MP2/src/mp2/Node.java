@@ -1,6 +1,8 @@
 package mp2;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -25,12 +27,17 @@ import java.util.concurrent.ConcurrentHashMap;
  * set_predecessor: we don't need an ack for this
  * 		req: "req set_predecessor <reqcnt> <parameter_pred> <sendId>"
  * update_finger_table: we don't need an ack for this
- * 		req: "req update_finger_table <parameter_s> <parameter_i> <sendId>
+ * 		req: "req update_finger_table <parameter_s> <parameter_i> <sendId>"
+ * move:
+ * 		req: "req move <reqcnt> <placeholder> <senderID>"
+ * 		ack: "ack move <reqcnt> <placeholder> <list of keys: comma split> <senderID>"
  */
 public class Node extends Thread {
 	
 	protected final int m = 8;
 	protected final int bound = 256;
+	
+	private final boolean DEBUG = true;
 	
 	//Used in full-capacity ArrayList in PeerToPeerLookupService
 	private int id;
@@ -365,10 +372,48 @@ public class Node extends Thread {
 			updateOthers();
 			//TODO: acquire correct keys from other nodes
 			//move keys in (predecessor, this.id] from successor
+			reqcnt++;
+			String movereq = "move " +reqcnt+" - ";
+			AckTracker move_reply = new AckTracker(1);
+			recvacks.put(movereq, move_reply); //wait for a single reply
+			p2p.send("req "+movereq+id, id, getSuccessor());
+			
+			//wait on reply
+			while (move_reply.toreceive > 0) {}
+			
+			List<String> receivedKeys = Arrays.asList(move_reply.validacks.get(0).split(","));
+			for(int i=0; i<receivedKeys.size(); ++i)
+				keys.put(Integer.parseInt(receivedKeys.get(i)), true);
+			
+			if (DEBUG)
+				System.out.println("DB: "+id+" Added Keys: "+move_reply.validacks.get(0));
 			
 		}
 		
 		//predecessor = findPredecessor(id);
+	}
+
+
+	public String moveKeysTo(int sendId) {
+		
+		String ret = "";
+		
+		//iteration can start at index = id since node 0 never goes away
+		for(int i=id; i<bound; ++i) {
+			if(keys.get(i) && i>id && i<=sendId) {
+				keys.remove(i);
+				ret += String.valueOf(i) + ",";
+			}	
+		}
+		
+		//Remove extra comma at the end
+		if (ret.charAt(ret.length()-1)==',')
+			ret.substring(0, ret.length()-1);
+		
+		if (DEBUG)
+			System.out.println("DB: "+id+" Removed Keys: "+ret);
+		
+		return ret;
 	}
 	
 }
