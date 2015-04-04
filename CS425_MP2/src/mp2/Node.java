@@ -130,12 +130,13 @@ public class Node extends Thread {
 			//wait on reply
 			while (move_reply.toreceive > 0) {}
 			
-			List<String> receivedKeys = Arrays.asList(move_reply.validacks.get(0).split(","));
+			//System.out.println("HI:"+);
+			List<String> receivedKeys = Arrays.asList((move_reply.validacks.get(0).split(" ")[4]).split(","));
 			for(int i=0; i<receivedKeys.size(); ++i)
 				keys.put(Integer.parseInt(receivedKeys.get(i)), true);
 			
 			if (DEBUG)
-				System.out.println("DB: "+id+" Added Keys: "+move_reply.validacks.get(0));
+				System.out.println("DB: "+id+" Added Keys: "+receivedKeys.toString());
 			
 		}
 		
