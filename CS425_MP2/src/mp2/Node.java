@@ -413,6 +413,19 @@ public class Node extends Thread {
 		return this.id;
 	}
 
+
+	public void printKeys() {
+		
+		ArrayList<Integer> keys_str = new ArrayList<Integer>();
+		
+		for(int i=0; i<bound; i++) {
+			if(keys.get(i))
+				keys_str.add(i);
+		}
+		
+		System.out.println("Node "+id+" has: "+keys_str.toString());
+	}
+
 	/*public String moveKeysTo(int sendId) {
 		
 		String ret = "";

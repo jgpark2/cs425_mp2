@@ -263,8 +263,9 @@ public class Coordinator extends Thread {
 		//according to Piazza post @350, this probably doesn't involve messages
 		//Check to see that node id exists in system
 		boolean exists = false;
+		Node n = null;
 		for (int i=0; i<p2p.nodes.size(); i++) {
-			Node n = p2p.nodes.get(i);
+			n = p2p.nodes.get(i);
 			int nodeid = n.getNodeId();
 			if (id == nodeid)
 				exists = true;
@@ -275,8 +276,9 @@ public class Coordinator extends Thread {
 			return;
 		}
 		
-		//TODO: call show method on node id
-		
+		n.printKeys();
+		cmdComplete = true;
+		return;
 	}
 	
 }
