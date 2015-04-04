@@ -29,8 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * update_finger_table: we don't need an ack for this
  * 		req: "req update_finger_table <parameter_s> <parameter_i> <sendId>"
  * move:
- * 		req: "req move <reqcnt> <placeholder> <senderID>"
- * 		ack: "ack move <reqcnt> <placeholder> <list of keys: comma split> <senderID>"
+ * 		req: "req transfer_keys <reqcnt> <placeholder> <senderID>"
+ * 		ack: "ack transfer_keys <reqcnt> <placeholder> <list of keys: comma split> <senderID>"
  */
 public class Node extends Thread {
 	
@@ -56,7 +56,7 @@ public class Node extends Thread {
 	
 	//successor is implicitly the first entry in the finger table
 	private Finger [] finger_table;
-	public int predecessor;
+	protected int predecessor;
 	
 	//The socket that the Node listens on
 	private Server server; 
@@ -98,13 +98,49 @@ public class Node extends Thread {
 	}
 	
 
+	/*
+	 * The main purpose of this thread is to represent a node in the
+	 * Chord system, executing join, leave, find, and show commands
+	 */
 	public void run() {
-		
-		//TODO: connect to other nodes (using methods in PeerToPeerLookupService)
 		server = new Server(this);
-		
 		//Join Algorithm
 		this.onJoin();
+	}
+	
+	
+	/*
+	 * Join algorithm for Chord system
+	 * Once the proper procedure has finished, Node must mark cmdComplete
+	 * as true
+	 */
+	private void onJoin() {
+		initializeFingerTable();
+		
+		if (!initialnode) {
+			updateOthers();
+			
+			//move keys in (predecessor, this.id] from successor
+			reqcnt++;
+			String key_req = "transfer_keys " + reqcnt + " " + this.predecessor;
+			AckTracker move_reply = new AckTracker(1);
+			recvacks.put(key_req, move_reply); //wait for a single reply
+			p2p.send("req " + key_req + " " + this.id, this.id, finger_table[0].node);
+			
+			//wait on reply
+			while (move_reply.toreceive > 0) {}
+			
+			List<String> receivedKeys = Arrays.asList(move_reply.validacks.get(0).split(","));
+			for(int i=0; i<receivedKeys.size(); ++i)
+				keys.put(Integer.parseInt(receivedKeys.get(i)), true);
+			
+			if (DEBUG)
+				System.out.println("DB: "+id+" Added Keys: "+move_reply.validacks.get(0));
+			
+		}
+		
+		//join algorithm finished, mark cmdComplete in Coordinator
+		p2p.coord.cmdComplete = true;
 	}
 	
 
@@ -196,17 +232,19 @@ public class Node extends Thread {
 	 * Update all nodes whose finger tables should refer to this Node
 	 */
 	private void updateOthers() {
+		
 		//for i=1 to m (8)
-		for (int i=0; i<m; i++) {
+		for (int i=1; i<=m; i++) {
 			
 			//find last node p whose ith finger might be n
-			int p = findPredecessor(this.id - (int)Math.pow(2,i)); //i-1 or i?/i=0 or i=1?
+			//p = find_predecessor(n-2^(i-1));
+			int p = findPredecessor(this.id - (int)Math.pow(2,i-1));
 			
 			//p_id.updateFingerTable(id,i);
 			if (p == this.id) { //call our method
 				this.updateFingerTable(this.id, i);
 			}
-			else { //don't need to wait for reply
+			else { //don't need to wait for a reply
 				String update_req = "update_finger_table "+this.id+" "+i;
 				p2p.send("req " + update_req + " " + this.id, this.id, p);
 			}
@@ -217,16 +255,21 @@ public class Node extends Thread {
 	
 	
 	/*
-	 * if s is ith finger of n, update n's finger table with s
+	 * If s is ith finger of this Node, update our finger table with s
+	 * The parameter i is 1-indexed, and finger_table is 0-indexed
 	 */
 	private void updateFingerTable(int s, int i) {
-		if(s>=id && s<finger_table[i].node) {
-			finger_table[i].node = s;
+		
+		//if (s in [this.id, finger[i].node))
+		if(p2p.insideInterval(s,this.id,finger_table[i-1].node) || s == this.id) {
+			finger_table[i-1].node = s;
 			int p = predecessor;
 			//p.update_finger_table(s, i);
-			p2p.send("req update "+s+" "+i, id, i);
+			//don't need to wait for a reply
+			String update_req = "update_finger_table "+s+" "+i;
+			p2p.send("req " + update_req + " " + this.id, this.id, p);
 		}
-	
+		
 	}
 	
 	
@@ -234,15 +277,12 @@ public class Node extends Thread {
 	 * This node has been asked to locate key
 	 * Send query to largest successor/finger entry <= key
 	 * (if none exist, send query to successor(this))
-	 * TODO:
 	 * Once the proper procedure has finished, Node must mark cmdComplete
 	 * as true
 	 */
 	protected void find(int key) {
-		
-		//check if we have it first
-		//then call findSuccessor, or something similar that just passes the search along
-		
+		System.out.println("Node "+findSuccessor(key)+" has key "+key);
+		p2p.coord.cmdComplete = true;
 	}
 	
 	
@@ -365,35 +405,6 @@ public class Node extends Thread {
 		return this.id;
 	}
 
-	private void onJoin() {
-		initializeFingerTable();
-		
-		if (!initialnode) {
-			updateOthers();
-			//TODO: acquire correct keys from other nodes
-			//move keys in (predecessor, this.id] from successor
-			reqcnt++;
-			String movereq = "move " +reqcnt+" - ";
-			AckTracker move_reply = new AckTracker(1);
-			recvacks.put(movereq, move_reply); //wait for a single reply
-			p2p.send("req "+movereq+id, id, getSuccessor());
-			
-			//wait on reply
-			while (move_reply.toreceive > 0) {}
-			
-			List<String> receivedKeys = Arrays.asList(move_reply.validacks.get(0).split(","));
-			for(int i=0; i<receivedKeys.size(); ++i)
-				keys.put(Integer.parseInt(receivedKeys.get(i)), true);
-			
-			if (DEBUG)
-				System.out.println("DB: "+id+" Added Keys: "+move_reply.validacks.get(0));
-			
-		}
-		
-		//predecessor = findPredecessor(id);
-	}
-
-
 	public String moveKeysTo(int sendId) {
 		
 		String ret = "";
@@ -401,7 +412,8 @@ public class Node extends Thread {
 		//iteration can start at index = id since node 0 never goes away
 		for(int i=id; i<bound; ++i) {
 			if(keys.get(i) && i>id && i<=sendId) {
-				keys.remove(i);
+				//Remove keys by setting flag to false
+				keys.put(i,false);
 				ret += String.valueOf(i) + ",";
 			}	
 		}
