@@ -259,7 +259,6 @@ public class Coordinator extends Thread {
 	 * as true
 	 */
 	protected void show(int id) {
-		
 		//according to Piazza post @350, this probably doesn't involve messages
 		//Check to see that node id exists in system
 		boolean exists = false;
@@ -267,8 +266,10 @@ public class Coordinator extends Thread {
 		for (int i=0; i<p2p.nodes.size(); i++) {
 			n = p2p.nodes.get(i);
 			int nodeid = n.getNodeId();
-			if (id == nodeid)
+			if (id == nodeid) {
 				exists = true;
+				break;
+			}
 		}
 		if (!exists) {
 			System.out.println("Node with id "+id+" does not exist in the system; try again");
