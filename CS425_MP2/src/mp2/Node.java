@@ -1,5 +1,6 @@
 package mp2;
 
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
 /*
@@ -397,6 +398,18 @@ public class Node extends Thread {
 		}
 		
 		return this.id;
+	}
+	
+public void printKeys() {
+		
+		ArrayList<Integer> keys_str = new ArrayList<Integer>();
+		
+		for(int i=0; i<bound; i++) {
+			if(keys.get(i))
+				keys_str.add(i);
+		}
+		
+		System.out.println("Node "+id+" has: "+keys_str.toString());
 	}
 	
 }
