@@ -2,6 +2,7 @@ package mp2;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -125,19 +126,25 @@ public class Node extends Thread {
 			String key_req = "transfer_keys " + reqcnt + " " + this.predecessor;
 			AckTracker move_reply = new AckTracker(1);
 			recvacks.put(key_req, move_reply); //wait for a single reply
-			p2p.send("req " + key_req + " " + this.id, this.id, finger_table[0].node);
+			p2p.send("req " + key_req + " " + this.id, this.id,  getSuccessor());
 			
 			//wait on reply
 			while (move_reply.toreceive > 0) {}
 			
-			//System.out.println("HI:"+);
-			List<String> receivedKeys = Arrays.asList((move_reply.validacks.get(0).split(" ")[4]).split(","));
-			for(int i=0; i<receivedKeys.size(); ++i)
-				keys.put(Integer.parseInt(receivedKeys.get(i)), true);
+			String[] reply = move_reply.validacks.get(0).split("\\s+");
 			
+			ArrayList<Integer> key_str = new ArrayList<Integer>();
+			
+			//Add transferred keys to hashmap
+			for (int i=4; i<reply.length-1; i++) {
+				Integer key = new Integer(reply[i]);
+				keys.put(key, true);
+				key_str.add(key);
+			}
+			
+			Collections.sort(key_str);
 			if (DEBUG)
-				System.out.println("DB: "+id+" Added Keys: "+receivedKeys.toString());
-			
+				System.out.println("DB: "+id+" Added Keys: "+key_str.toString());
 		}
 		
 		//join algorithm finished, mark cmdComplete in Coordinator
@@ -406,7 +413,7 @@ public class Node extends Thread {
 		return this.id;
 	}
 
-	public String moveKeysTo(int sendId) {
+	/*public String moveKeysTo(int sendId) {
 		
 		String ret = "";
 		
@@ -427,6 +434,6 @@ public class Node extends Thread {
 			System.out.println("DB: "+id+" Removed Keys: "+ret);
 		
 		return ret;
-	}
+	}*/
 	
 }

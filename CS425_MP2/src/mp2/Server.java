@@ -144,13 +144,10 @@ public class Server extends Thread {
 				node.predecessor = Integer.parseInt(words[3]);
 			}
 			else if (words[1].compareTo("transfer_keys") == 0) {
-				System.out.println("Node "+node.getNodeId()+" is processing a move req message: \""+msg+"\"");
-				returnValue = node.moveKeysTo(sendId);
-				sendReturnValue = true;
-				/*
 				//move keys in (range_start, sendId] to the sendId
 				int range_start = Integer.parseInt(words[3]);
-				String keysReturnValue = new String();
+				
+				returnValue = "";
 				
 				Set<Integer> keyset = node.keys.keySet();
 				Iterator<Integer> it = keyset.iterator();
@@ -160,15 +157,14 @@ public class Server extends Thread {
 						//take it out of our keys
 						node.keys.put(key, false);
 						//add it to keysReturnValue
-						keysReturnValue = keysReturnValue + key.toString() + " ";
+						returnValue = returnValue + key.toString() + " ";
 					}
 				}
 				
-				if (keysReturnValue.compareTo("") != 0)
-					keysReturnValue = keysReturnValue.substring(0, keysReturnValue.length()-1);
+				if (returnValue.compareTo("") != 0)
+					returnValue = returnValue.substring(0, returnValue.length()-1);
 				
-				String sendReply = "ack " + msgId + " " + keysReturnValue;
-				node.p2p.send(sendReply + " " + node.getNodeId(), node.getNodeId(), sendId);*/
+				sendReturnValue = true;
 			}
 			
 			if (sendReturnValue) {
