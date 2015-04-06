@@ -188,6 +188,7 @@ public class Node extends Thread {
 			
 			String reply_id = find_successor_reply.validacks.get(0);
 			finger_table[0].node = Integer.parseInt(reply_id);
+			System.out.println("Node "+this.id+"'s successor just set as "+reply_id);
 			
 			//predecessor = successor.predecessor;
 			reqcnt++;
@@ -201,6 +202,7 @@ public class Node extends Thread {
 			
 			String pred_reply_id = predecessor_reply.validacks.get(0);
 			this.predecessor = Integer.parseInt(pred_reply_id);
+			System.out.println("Node "+this.id+"'s predecessor just set as "+pred_reply_id);
 			
 			//successor.predecessor = this; //we don't need to wait for a return value (ack)
 			String set_pred_req = "set_predecessor "+this.id+" "+this.id;
@@ -228,6 +230,8 @@ public class Node extends Thread {
 					String finger_suc_reply_id = finger_suc_reply.validacks.get(0);
 					finger_table[i+1].node = Integer.parseInt(finger_suc_reply_id);
 				}
+				
+				System.out.println("Node "+this.id+"'s finger_table["+i+"] set as "+finger_table[i].node);
 				
 			}
 
