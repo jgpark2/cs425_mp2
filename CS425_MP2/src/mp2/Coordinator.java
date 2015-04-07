@@ -248,6 +248,11 @@ public class Coordinator extends Thread {
 	 */
 	protected void showall() {
 		//TODO: call show all method on node 0
+		for (int i=0; i<p2p.nodes.size(); i++) {
+			Node n = p2p.nodes.get(i);
+			show( n.getNodeId());
+			
+		}
 	}
 	
 	
