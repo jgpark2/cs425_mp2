@@ -115,35 +115,36 @@ public class Server extends Thread {
 			boolean sendReturnValue = false;
 			
 			if (words[1].compareTo("find_successor") == 0) {
-				System.out.println("Node "+node.getNodeId()+" is processing a find_successor req message: \""+msg+"\"");
+//				System.out.println("Node "+node.getNodeId()+" is processing a find_successor req message: \""+msg+"\"");
 				//create waiting thread to get all the answers to this,
 				//This thread will then call p2p.send so Server doesn't have to wait
 				new AlgorithmWaitingThread(node, words[1], msg);
 			}
 			
 			else if (words[1].compareTo("successor") == 0) {
-				System.out.println("Node "+node.getNodeId()+" is processing a successor req message: \""+msg+"\"");
+//				System.out.println("Node "+node.getNodeId()+" is processing a successor req message: \""+msg+"\"");
 				returnValue = String.valueOf(node.getSuccessor());
 				sendReturnValue = true;
 			}
 			
 			else if (words[1].compareTo("closest_preceding_finger") == 0) {
-				System.out.println("Node "+node.getNodeId()+" is processing a closest_preceding_finger req message: \""+msg+"\"");
+//				System.out.println("Node "+node.getNodeId()+" is processing a closest_preceding_finger req message: \""+msg+"\"");
 				returnValue = String.valueOf(node.closestPrecedingFinger(Integer.parseInt(words[3])));
 				sendReturnValue = true;
 			}
 			
 			else if (words[1].compareTo("predecessor") == 0) {
-				System.out.println("Node "+node.getNodeId()+" is processing a predecessor req message: \""+msg+"\"");
+//				System.out.println("Node "+node.getNodeId()+" is processing a predecessor req message: \""+msg+"\"");
 				returnValue = String.valueOf(node.getPredecessor());
 				sendReturnValue = true;
 			}
 			
 			else if (words[1].compareTo("set_predecessor") == 0) {
-				System.out.println("Node "+node.getNodeId()+" is processing a set_predecessor req message: \""+msg+"\"");
+//				System.out.println("Node "+node.getNodeId()+" is processing a set_predecessor req message: \""+msg+"\"");
 				node.predecessor = Integer.parseInt(words[3]);
 			}
 			else if (words[1].compareTo("transfer_keys") == 0) {
+//				System.out.println("Node "+node.getNodeId()+" is processing a transfer_keys req message: \""+msg+"\"");
 				//move keys in (range_start, sendId] to the sendId
 				int range_start = Integer.parseInt(words[3]);
 				
@@ -153,6 +154,7 @@ public class Server extends Thread {
 				Iterator<Integer> it = keyset.iterator();
 				while (it.hasNext()) {
 					Integer key = it.next();
+					if (!node.keys.get(key)) continue; //do not move key if it's not ours
 					if (node.p2p.insideHalfInclusiveInterval(key.intValue(), range_start, sendId)) {
 						//take it out of our keys
 						node.keys.put(key, false);
@@ -179,27 +181,27 @@ public class Server extends Thread {
 			boolean updaterecvacks = false;
 
 			if (words[1].compareTo("find_successor") == 0) {
-				System.out.println("Node "+node.getNodeId()+" is processing a find_successor ack message: \""+msg+"\"");
+//				System.out.println("Node "+node.getNodeId()+" is processing a find_successor ack message: \""+msg+"\"");
 				updaterecvacks = true;
 			}
 			
 			else if (words[1].compareTo("successor") == 0) {
-				System.out.println("Node "+node.getNodeId()+" is processing a successor ack message: \""+msg+"\"");
+//				System.out.println("Node "+node.getNodeId()+" is processing a successor ack message: \""+msg+"\"");
 				updaterecvacks = true;
 			}
 			
 			else if (words[1].compareTo("closest_preceding_finger") == 0) {
-				System.out.println("Node "+node.getNodeId()+" is processing a closest_preceding_finger ack message: \""+msg+"\"");
+//				System.out.println("Node "+node.getNodeId()+" is processing a closest_preceding_finger ack message: \""+msg+"\"");
 				updaterecvacks = true;
 			}
 			
 			else if (words[1].compareTo("predecessor") == 0) {
-				System.out.println("Node "+node.getNodeId()+" is processing a predecessor ack message: \""+msg+"\"");
+//				System.out.println("Node "+node.getNodeId()+" is processing a predecessor ack message: \""+msg+"\"");
 				updaterecvacks = true;
 			}
 			
 			else if (words[1].compareTo("transfer_keys") == 0) {
-				System.out.println("Node "+node.getNodeId()+" is processing a transfer_keys ack message: \""+msg+"\"");
+//				System.out.println("Node "+node.getNodeId()+" is processing a transfer_keys ack message: \""+msg+"\"");
 				String ack = new String(msg);
 				AckTracker replyTracker = node.recvacks.get(msgId);
 				replyTracker.validacks.add(ack);
