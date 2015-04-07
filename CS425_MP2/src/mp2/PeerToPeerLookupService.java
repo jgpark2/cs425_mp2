@@ -80,6 +80,7 @@ public class PeerToPeerLookupService {
 	/*
 	 * Method used by any Node to send a message through sockets
 	 * Eliminates confusion about sockets closing on one or both ends
+	 * sendId = sender's ID/Source, recvID = receipient/Destination  
 	 */
 	protected int send(String msg, int sendId, int recvId) {
 		int ret = -1;

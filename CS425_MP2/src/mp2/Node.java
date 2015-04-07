@@ -23,10 +23,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * 		req: "req closest_preceding_finger <reqcnt> <parameter_id> <sendId>"
  * 		ack: "ack closest_preceding_finger <reqcnt> <parameter_id> <return_value> <sendId>"
  * predecessor:
- * 		req: "req predecessor <reqcnt> <placeholder> <sendId>"
- * 		ack: "ack predecessor <reqcnt> <placeholder> <return_value> <sendId>"
+ * 		req: "req find_predecessor <reqcnt> <parameter_id> <sendId>"
+ * 		ack: "ack find_predecessor <reqcnt> <parameter_id> <return_value> <sendId>"
  * set_predecessor: we don't need an ack for this
  * 		req: "req set_predecessor <reqcnt> <parameter_pred> <sendId>"
+ * set_successor: we don't need an ack for this
+ * 		req: "req set_successor <reqcnt> <parameter_pred> <sendId>"
  * update_finger_table: we don't need an ack for this
  * 		req: "req update_finger_table <parameter_s> <parameter_i> <sendId>"
  * move:
@@ -56,7 +58,7 @@ public class Node extends Thread {
 	ConcurrentHashMap<Integer,Boolean> keys;
 	
 	//successor is implicitly the first entry in the finger table
-	private Finger [] finger_table;
+	protected Finger [] finger_table;
 	protected int predecessor;
 	
 	//The socket that the Node listens on
@@ -117,7 +119,7 @@ public class Node extends Thread {
 	 */
 	private void onJoin() {
 		initializeFingerTable();
-		
+		System.out.println("Initd");
 		if (!initialnode) {
 			updateOthers();
 			
@@ -166,6 +168,7 @@ public class Node extends Thread {
 		}
 		
 		if (initialnode) { //this is the first node in the network
+			System.out.println("Initializing finger table for inital node "+id);
 			//Logically, all connections are to ourself here
 			for (int i=0; i<m; i++) {
 				finger_table[i].node = 0;
@@ -173,29 +176,12 @@ public class Node extends Thread {
 			predecessor = 0;
 		}
 		else {
-			
-			//At this point, we only know node 0 exists
-			
-			//finger[1].node = 0.find_successor(finger[1].start);
+			//DEFINING PREDECESSOR
 			reqcnt++;
-			String req = "find_successor "+reqcnt+" " + finger_table[0].start;
-			AckTracker find_successor_reply = new AckTracker(1);
-			recvacks.put(req, find_successor_reply); //wait for a single reply
-			p2p.send("req " + req + " " + this.id, this.id, 0);
-			
-			//wait on reply
-			while (find_successor_reply.toreceive > 0) {}
-			
-			String reply_id = find_successor_reply.validacks.get(0);
-			finger_table[0].node = Integer.parseInt(reply_id);
-			System.out.println("Node "+this.id+"'s successor just set as "+reply_id);
-			
-			//predecessor = successor.predecessor;
-			reqcnt++;
-			String pred_req = "predecessor "+reqcnt+" " + this.id;
+			String pred_req = "find_predecessor "+reqcnt+" " + this.id;
 			AckTracker predecessor_reply = new AckTracker(1);
 			recvacks.put(pred_req, predecessor_reply); //wait for a single reply
-			p2p.send("req " + pred_req + " " + this.id, this.id, finger_table[0].node);
+			p2p.send("req " + pred_req + " " + this.id, this.id, 0);
 			
 			//wait on reply
 			while (predecessor_reply.toreceive > 0) {}
@@ -204,34 +190,52 @@ public class Node extends Thread {
 			this.predecessor = Integer.parseInt(pred_reply_id);
 			System.out.println("Node "+this.id+"'s predecessor just set as "+pred_reply_id);
 			
-			//successor.predecessor = this; //we don't need to wait for a return value (ack)
+			
+			//DEFINING SUCCESSOR			
+			reqcnt++;
+			String req = "successor "+reqcnt+" " + "-";
+			AckTracker successor_reply = new AckTracker(1);
+			recvacks.put(req, successor_reply); //wait for a single reply
+			p2p.send("req " + req + " " + id, id, predecessor);
+			
+			//wait on reply
+			while (successor_reply.toreceive > 0) {}
+			
+			String reply_id = successor_reply.validacks.get(0);
+			finger_table[0].node = Integer.parseInt(reply_id); //Set Successor
+			System.out.println("Node "+this.id+"'s successor just set as "+finger_table[0].node);
+			
+			
+			//UPDATING SUCCESOR AND PREDECESSOR
+			//we don't need to wait for a return value (ack)
 			String set_pred_req = "set_predecessor "+this.id+" "+this.id;
-			p2p.send("req " + set_pred_req + " " + this.id, this.id, finger_table[0].node);
+			p2p.send("req " + set_pred_req + " " + this.id, this.id, getSuccessor());			
+			String set_succ_req = "set_successor "+this.id+" "+this.id;
+			p2p.send("req " + set_succ_req + " " + this.id, this.id, predecessor);	
 			
-			
-			for (int i=0; i<m-1; i++) {
+			for (int i=1; i<m; i++) {
 				
-				if (p2p.insideInterval(finger_table[i+1].start, this.id, finger_table[i].node)
-						|| finger_table[i+1].start == this.id) {
-					finger_table[i+1].node = finger_table[i].node;
+				if (p2p.insideInterval(finger_table[i].start, this.id, finger_table[i-1].node)
+						|| finger_table[i].start == this.id) {
+					finger_table[i].node = finger_table[i-1].node;
 				}
 				
 				else {
-					//finger[i+1].node = 0.find_successor(finger[i+1].start);
+					//finger[i].node = 0.find_successor(finger[i].start);
 					reqcnt++;
-					String finger_suc_req = "find_successor "+reqcnt+" " + finger_table[i+1].start;
+					String finger_suc_req = "find_successor "+reqcnt+" " + finger_table[i].start;
 					AckTracker finger_suc_reply = new AckTracker(1);
 					recvacks.put(finger_suc_req, finger_suc_reply); //wait for a single reply
 					p2p.send("req " + finger_suc_req + " " + this.id, this.id, 0);
-					
+
 					//wait on reply
 					while (finger_suc_reply.toreceive > 0) {}
 					
 					String finger_suc_reply_id = finger_suc_reply.validacks.get(0);
-					finger_table[i+1].node = Integer.parseInt(finger_suc_reply_id);
+					finger_table[i].node = Integer.parseInt(finger_suc_reply_id);
 				}
 				
-				System.out.println("Node "+this.id+"'s finger_table["+i+"] set as "+finger_table[i].node);
+				System.out.println("Node "+this.id+"'s finger_table["+i+"] set as "+finger_table[i].start+"->"+finger_table[i].node);
 				
 			}
 

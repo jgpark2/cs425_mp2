@@ -48,6 +48,17 @@ public class AlgorithmWaitingThread extends Thread {
 		//Find successor: find it, then send reply to requesting Node
 		if (algorithm.compareTo("find_successor") == 0) {
 			int returnValue = findSuccessor();
+			if(returnValue==-1)
+				return;
+			String sendReply = retMessage + " " + returnValue;
+			node.p2p.send(sendReply + " " + nodeId, nodeId, reqNode);
+		}
+		
+		//Find predecessor: find it, then send reply to requesting Node
+		if (algorithm.compareTo("find_predecessor") == 0) {
+			int returnValue = findPredecessor(Integer.parseInt(origMessageWords[3]));
+			if(returnValue==-1)
+				return;
 			String sendReply = retMessage + " " + returnValue;
 			node.p2p.send(sendReply + " " + nodeId, nodeId, reqNode);
 		}
@@ -63,28 +74,24 @@ public class AlgorithmWaitingThread extends Thread {
 		
 		int id = Integer.parseInt(origMessageWords[3]);
 		
-		int nprime = findPredecessor(id);
+		if(node.p2p.insideHalfInclusiveInterval(id, node.getPredecessor(), nodeId)) {
+			//System.out.println("whee:"+nodeId);
+			return nodeId;
+		}
 		
-		if (nprime == nodeId) {
+		if(node.p2p.insideHalfInclusiveInterval(id, nodeId, node.getSuccessor())) {
+			//System.out.println("whee:"+nodeId);
 			return node.getSuccessor();
 		}
 		
-		else { //ask nprime for its successor
-			
-			int reqcnt = ++node.reqcnt;
-			String successorreq = "successor " +reqcnt+" " + nprime;
-			AckTracker successor_reply = new AckTracker(1);
-			node.recvacks.put(successorreq, successor_reply); //wait for a single reply
-			node.p2p.send("req " + successorreq + " " + nodeId, nodeId, nprime);
-			
-			//wait on reply
-			while (successor_reply.toreceive > 0) {}
-			
-			String reply_id = successor_reply.validacks.get(0);
-			return Integer.parseInt(reply_id);
-			
-		}
-
+		//Otherwise pass the message onto someone else
+		int nprime = node.closestPrecedingFinger(id);
+		//System.out.println("Closest preceding finger:"+nprime);
+		
+		String succ_req = "find_successor "+origMessageWords[2]+" " + id;
+		node.p2p.send("req " + succ_req + " " + id, id, nprime);
+		
+		return -1;
 	}
 
 
@@ -93,74 +100,20 @@ public class AlgorithmWaitingThread extends Thread {
 	 */
 	private int findPredecessor(int id) {
 		
-		int nprime = nodeId;
-		int nprimesuccessor = node.getSuccessor();
-		
-		while (!node.p2p.insideHalfInclusiveInterval(id, nprime, nprimesuccessor)) {
-			
-			if (nprime == nodeId) { //call our node's method
-				nprime = node.closestPrecedingFinger(id);
-				
-				//set nprimesuccessor
-				if (nprime == nodeId) {
-					nprimesuccessor = node.getSuccessor();
-				}
-				else { //ask nprime for its successor
-					
-					int reqcnt = ++node.reqcnt;
-					String successorreq = "successor " +reqcnt+" " + nprime;
-					AckTracker successor_reply = new AckTracker(1);
-					node.recvacks.put(successorreq, successor_reply); //wait for a single reply
-					node.p2p.send("req " + successorreq + " " + nodeId, nodeId, nprime);
-					
-					//wait on reply
-					while (successor_reply.toreceive > 0) {}
-					
-					String reply_id = successor_reply.validacks.get(0);
-					nprimesuccessor = Integer.parseInt(reply_id);
-					
-				}
-			}
-			
-			else { //send a message to nprime
-				
-				int reqcnt = ++node.reqcnt;
-				String req = "closest_preceding_finger " +reqcnt+" " + id;
-				AckTracker closest_preceding_finger_reply = new AckTracker(1);
-				node.recvacks.put(req, closest_preceding_finger_reply); //wait for a single reply
-				node.p2p.send("req " + req + " " + nodeId, nodeId, nprime);
-				
-				//wait on reply
-				while (closest_preceding_finger_reply.toreceive > 0) {}
-				
-				String reply_finger = closest_preceding_finger_reply.validacks.get(0);
-				nprime = Integer.parseInt(reply_finger);
-				
-				//set nprimesuccessor
-				if (nprime == nodeId) {
-					nprimesuccessor = node.getSuccessor();
-				}
-				else { //ask nprime for its successor
-					
-					reqcnt = ++node.reqcnt;
-					String successorreq = "successor " +reqcnt+" " + nprime;
-					AckTracker successor_reply = new AckTracker(1);
-					node.recvacks.put(successorreq, successor_reply); //wait for a single reply
-					node.p2p.send("req " + successorreq + " " + nodeId, nodeId, nprime);
-					
-					//wait on reply
-					while (successor_reply.toreceive > 0) {}
-					
-					String reply_id = successor_reply.validacks.get(0);
-					nprimesuccessor = Integer.parseInt(reply_id);
-					
-				}
-				
-			}
-
+		//If you are this id's predecessor, return your nodeID
+		if(node.p2p.insideHalfInclusiveInterval(id, nodeId, node.getSuccessor())) {
+			//System.out.println("whee:"+nodeId);
+			return nodeId;
 		}
-
-		return nprime;
+		
+		//Otherwise pass the message onto someone else
+		int nprime = node.closestPrecedingFinger(id);
+		//System.out.println("Closest preceding finger:"+nprime);
+		
+		String pred_req = "find_predecessor "+origMessageWords[2]+" " + id;
+		node.p2p.send("req " + pred_req + " " + id, id, nprime);
+		
+		return -1;
 	}
 
 }

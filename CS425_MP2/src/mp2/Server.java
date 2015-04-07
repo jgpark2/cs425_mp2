@@ -133,15 +133,22 @@ public class Server extends Thread {
 				sendReturnValue = true;
 			}
 			
-			else if (words[1].compareTo("predecessor") == 0) {
+			else if (words[1].compareTo("find_predecessor") == 0) {
 //				System.out.println("Node "+node.getNodeId()+" is processing a predecessor req message: \""+msg+"\"");
-				returnValue = String.valueOf(node.getPredecessor());
-				sendReturnValue = true;
+				new AlgorithmWaitingThread(node, words[1], msg);
+				//returnValue = String.valueOf(node.getPredecessor());
+				//sendReturnValue = true;
 			}
 			
 			else if (words[1].compareTo("set_predecessor") == 0) {
 //				System.out.println("Node "+node.getNodeId()+" is processing a set_predecessor req message: \""+msg+"\"");
 				node.predecessor = Integer.parseInt(words[3]);
+				System.out.println("Node "+node.getNodeId()+" set its predecessor to "+node.predecessor);
+			}
+			else if (words[1].compareTo("set_successor") == 0) {
+//				System.out.println("Node "+node.getNodeId()+" is processing a set_predecessor req message: \""+msg+"\"");
+				node.finger_table[0].node = Integer.parseInt(words[3]);
+				System.out.println("Node "+node.getNodeId()+" set its successor to "+node.getSuccessor());
 			}
 			else if (words[1].compareTo("transfer_keys") == 0) {
 //				System.out.println("Node "+node.getNodeId()+" is processing a transfer_keys req message: \""+msg+"\"");
@@ -195,7 +202,7 @@ public class Server extends Thread {
 				updaterecvacks = true;
 			}
 			
-			else if (words[1].compareTo("predecessor") == 0) {
+			else if (words[1].compareTo("find_predecessor") == 0) {
 //				System.out.println("Node "+node.getNodeId()+" is processing a predecessor ack message: \""+msg+"\"");
 				updaterecvacks = true;
 			}
