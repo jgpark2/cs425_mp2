@@ -93,27 +93,7 @@ public class AlgorithmWaitingThread extends Thread {
 			return Integer.parseInt(reply_id);
 			
 		}
-		/*
-		int id = Integer.parseInt(origMessageWords[3]);
-		
-		if(node.p2p.insideHalfInclusiveInterval(id, node.getPredecessor(), nodeId)) {
-			//System.out.println("whee:"+nodeId);
-			return nodeId;
-		}
-		
-		if(node.p2p.insideHalfInclusiveInterval(id, nodeId, node.getSuccessor())) {
-			//System.out.println("whee:"+nodeId);
-			return node.getSuccessor();
-		}
-		
-		//Otherwise pass the message onto someone else
-		int nprime = node.closestPrecedingFinger(id);
-		//System.out.println("Closest preceding finger:"+nprime);
-		
-		String succ_req = "find_successor "+origMessageWords[2]+" " + id;
-		node.p2p.send("req " + succ_req + " " + id, id, nprime);
-		
-		return -1;*/
+
 	}
 
 
@@ -138,14 +118,20 @@ public class AlgorithmWaitingThread extends Thread {
 		return -1;
 	}
 	
-private int findPredecessorOnly(int id) {
+	private int findPredecessorOnly(int id) {
 		
 		int nprime = nodeId;
 		int nprimesuccessor = node.getSuccessor();
 		
+		//temporary sketchy fix to stop hanging:
+		if (id == nodeId) {
+			return node.getPredecessor();
+		}
+		
 		while (!node.p2p.insideHalfInclusiveInterval(id, nprime, nprimesuccessor)) {
 			
 			if (nprime == nodeId) { //call our node's method
+				//System.out.println("got here; nprime: "+nprime+", nprimesuccessor: "+nprimesuccessor+", id: "+id);
 				nprime = node.closestPrecedingFinger(id);
 				
 				//set nprimesuccessor
@@ -160,8 +146,10 @@ private int findPredecessorOnly(int id) {
 					node.recvacks.put(successorreq, successor_reply); //wait for a single reply
 					node.p2p.send("req " + successorreq + " " + nodeId, nodeId, nprime);
 					
+//					System.out.println("Node "+nodeId+"'s algorithmwaitingthread going to wait on successor reply...");
 					//wait on reply
 					while (successor_reply.toreceive > 0) {}
+//					System.out.println("Node "+nodeId+"'s algorithmwaitingthread done waiting on successor reply");
 					
 					String reply_id = successor_reply.validacks.get(0);
 					nprimesuccessor = Integer.parseInt(reply_id);
@@ -177,8 +165,10 @@ private int findPredecessorOnly(int id) {
 				node.recvacks.put(req, closest_preceding_finger_reply); //wait for a single reply
 				node.p2p.send("req " + req + " " + nodeId, nodeId, nprime);
 				
+//				System.out.println("Node "+nodeId+"'s algorithmwaitingthread going to wait on closest_preceding_finger reply...");
 				//wait on reply
 				while (closest_preceding_finger_reply.toreceive > 0) {}
+//				System.out.println("Node "+nodeId+"'s algorithmwaitingthread done waiting on closest_preceding_finger reply");
 				
 				String reply_finger = closest_preceding_finger_reply.validacks.get(0);
 				nprime = Integer.parseInt(reply_finger);
@@ -195,8 +185,10 @@ private int findPredecessorOnly(int id) {
 					node.recvacks.put(successorreq, successor_reply); //wait for a single reply
 					node.p2p.send("req " + successorreq + " " + nodeId, nodeId, nprime);
 					
+//					System.out.println("Node "+nodeId+"'s algorithmwaitingthread going to wait on successor reply...");
 					//wait on reply
 					while (successor_reply.toreceive > 0) {}
+//					System.out.println("Node "+nodeId+"'s algorithmwaitingthread done waiting on successor reply");
 					
 					String reply_id = successor_reply.validacks.get(0);
 					nprimesuccessor = Integer.parseInt(reply_id);

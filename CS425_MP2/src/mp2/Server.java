@@ -151,6 +151,7 @@ public class Server extends Thread {
 				System.out.println("Node "+node.getNodeId()+" set its successor to "+node.getSuccessor());
 			}
 			else if (words[1].compareTo("update_finger_table") == 0) {
+//				System.out.println("Node "+node.getNodeId()+" is processing a update_finger_table req message: \""+msg+"\"");
 				node.updateFingerTable(Integer.parseInt(words[2]), Integer.parseInt(words[3])); 
 			}
 			else if (words[1].compareTo("transfer_keys") == 0) {

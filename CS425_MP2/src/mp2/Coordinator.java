@@ -91,6 +91,28 @@ public class Coordinator extends Thread {
 					}
 				}
 				
+				//TEMPORARY UTILITY METHOD
+				else if (cmd.lastIndexOf("finger ") == 0) { //finger p
+					int p = Integer.parseInt(cmd.substring(7));
+					boolean exists = false;
+					Node n = null;
+					for (int i=0; i<p2p.nodes.size(); i++) {
+						n = p2p.nodes.get(i);
+						int nodeid = n.getNodeId();
+						if (p == nodeid) {
+							exists = true;
+							break;
+						}
+					}
+					if (!exists) {
+						System.out.println("Node with id "+p+" does not exist in the system; try again");
+					}
+					else {
+						n.showFingerTable();
+					}
+					cmdComplete = true;
+				}
+				
 				else {
 					System.out.println("Command was not correctly fomatted; try again");
 					continue;
