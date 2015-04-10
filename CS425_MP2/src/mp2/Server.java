@@ -150,6 +150,9 @@ public class Server extends Thread {
 				node.finger_table[0].node = Integer.parseInt(words[3]);
 				System.out.println("Node "+node.getNodeId()+" set its successor to "+node.getSuccessor());
 			}
+			else if (words[1].compareTo("update_finger_table") == 0) {
+				node.updateFingerTable(Integer.parseInt(words[2]), Integer.parseInt(words[3])); 
+			}
 			else if (words[1].compareTo("transfer_keys") == 0) {
 //				System.out.println("Node "+node.getNodeId()+" is processing a transfer_keys req message: \""+msg+"\"");
 				//move keys in (range_start, sendId] to the sendId
@@ -216,8 +219,11 @@ public class Server extends Thread {
 			}
 			
 			if (updaterecvacks) {
+				System.out.println(node.getNodeId() + "get: " +msgId);
 				String returnValue = words[4];
 				AckTracker replyTracker = node.recvacks.get(msgId);
+				if(replyTracker==null)
+					System.out.println("AHA");
 				replyTracker.validacks.add(returnValue);
 				replyTracker.toreceive--;
 			}

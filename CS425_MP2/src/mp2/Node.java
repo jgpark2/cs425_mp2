@@ -177,6 +177,7 @@ public class Node extends Thread {
 		}
 		else {
 			//DEFINING PREDECESSOR
+			//Ask Introducer 0 to pass along the message to find my predecessor
 			reqcnt++;
 			String pred_req = "find_predecessor "+reqcnt+" " + this.id;
 			AckTracker predecessor_reply = new AckTracker(1);
@@ -191,7 +192,8 @@ public class Node extends Thread {
 			System.out.println("Node "+this.id+"'s predecessor just set as "+pred_reply_id);
 			
 			
-			//DEFINING SUCCESSOR			
+			//DEFINING SUCCESSOR
+			//Ask my predecessor about his successor
 			reqcnt++;
 			String req = "successor "+reqcnt+" " + "-";
 			AckTracker successor_reply = new AckTracker(1);
@@ -213,30 +215,9 @@ public class Node extends Thread {
 			String set_succ_req = "set_successor "+this.id+" "+this.id;
 			p2p.send("req " + set_succ_req + " " + this.id, this.id, predecessor);	
 			
-			for (int i=1; i<m; i++) {
-				
-				if (p2p.insideInterval(finger_table[i].start, this.id, finger_table[i-1].node)
-						|| finger_table[i].start == this.id) {
-					finger_table[i].node = finger_table[i-1].node;
-				}
-				
-				else {
-					//finger[i].node = 0.find_successor(finger[i].start);
-					reqcnt++;
-					String finger_suc_req = "find_successor "+reqcnt+" " + finger_table[i].start;
-					AckTracker finger_suc_reply = new AckTracker(1);
-					recvacks.put(finger_suc_req, finger_suc_reply); //wait for a single reply
-					p2p.send("req " + finger_suc_req + " " + this.id, this.id, 0);
-
-					//wait on reply
-					while (finger_suc_reply.toreceive > 0) {}
-					
-					String finger_suc_reply_id = finger_suc_reply.validacks.get(0);
-					finger_table[i].node = Integer.parseInt(finger_suc_reply_id);
-				}
-				
-				System.out.println("Node "+this.id+"'s finger_table["+i+"] set as "+finger_table[i].start+"->"+finger_table[i].node);
-				
+			
+			for(int i=1; i<=m; i++) {
+				System.out.println("Node "+this.id+"'s finger_table["+i+"] set as "+finger_table[i-1].start+"->"+finger_table[i-1].node);
 			}
 
 		}
@@ -249,24 +230,51 @@ public class Node extends Thread {
 	 */
 	private void updateOthers() {
 		
+			/*if (p2p.insideInterval(finger_table[i].start, this.id, finger_table[i-1].node)
+					|| finger_table[i].start == this.id) {
+				finger_table[i].node = finger_table[i-1].node;
+			}*/
+			
+			//finger[i].node = 0.find_successor(finger[i].start);
+		
+		
+		
 		//for i=1 to m (8)
 		for (int i=1; i<=m; i++) {
 			
 			//find last node p whose ith finger might be n
 			//p = find_predecessor(n-2^(i-1));
-			int p = findPredecessor(this.id - (int)Math.pow(2,i-1));
+			//int p = findPredecessor(this.id - (int)Math.pow(2,i-1));
+			
+			reqcnt++;
+			//String finger_suc_req = "find_successor "+reqcnt+" " + finger_table[i].start;
+			String finger_pre_req = "find_predecessor "+reqcnt+" "+(this.id -(int)Math.pow(2,i-1));
+			
+			AckTracker finger_pre_reply = new AckTracker(1);
+			recvacks.put(finger_pre_req, finger_pre_reply); //wait for a single reply
+			p2p.send("req " + finger_pre_req + " " + this.id, this.id, 0);
+			
+			//wait on reply
+			while (finger_pre_reply.toreceive > 0) {};//TODO: GETS STUCK HERE ATM
+			
+			String finger_pre_reply_id = finger_pre_reply.validacks.get(0);
+			int p = Integer.parseInt(finger_pre_reply_id);
+			System.out.println("Trying to Update Node "+finger_pre_reply_id+"'s "+i+"th finger table entry (succ) to me: "+this.id);
+			
+			
 			
 			//p_id.updateFingerTable(id,i);
 			if (p == this.id) { //call our method
-				this.updateFingerTable(this.id, i);
+				//this.updateFingerTable(this.id, i);
+				finger_table[i-1].node = this.id;
 			}
 			else { //don't need to wait for a reply
 				String update_req = "update_finger_table "+this.id+" "+i;
-				p2p.send("req " + update_req + " " + this.id, this.id, p);
+				p2p.send("req " + update_req + " " + this.id, this.id, p); // i is 1-based
 			}
 			
 		}
-		
+
 	}
 	
 	
@@ -274,16 +282,18 @@ public class Node extends Thread {
 	 * If s is ith finger of this Node, update our finger table with s
 	 * The parameter i is 1-indexed, and finger_table is 0-indexed
 	 */
-	private void updateFingerTable(int s, int i) {
-		
+	void updateFingerTable(int s, int i) {
 		//if (s in [this.id, finger[i].node))
-		if(p2p.insideInterval(s,this.id,finger_table[i-1].node) || s == this.id) {
+		int upper_bound = finger_table[i-1].node-1;
+		if (upper_bound<0) upper_bound = bound-1; 
+		if((s>=this.id && s<=upper_bound) || s == this.id) {
 			finger_table[i-1].node = s;
 			int p = predecessor;
+			System.out.println(this.id+" updated its finger table "+i+"th entry to "+s);
 			//p.update_finger_table(s, i);
 			//don't need to wait for a reply
-			String update_req = "update_finger_table "+s+" "+i;
-			p2p.send("req " + update_req + " " + this.id, this.id, p);
+			/*String update_req = "update_finger_table "+s+" "+i; TODO: WHYYYYYYY?
+			p2p.send("req " + update_req + " " + this.id, this.id, p);*/
 		}
 		
 	}
