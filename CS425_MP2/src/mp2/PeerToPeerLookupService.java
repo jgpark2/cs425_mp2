@@ -131,8 +131,14 @@ public class PeerToPeerLookupService {
 	
 	/*
 	 * Determines if x is on the interval (a,b) (exclusive) mod 2^m
+	 * Consider the case where the interval is (0,0); we are conceptualizing
+	 * this to mean that the interval is (0,256)
 	 */
 	protected boolean insideInterval(int x, int a, int b) {
+		if (a == b) {
+//			System.out.println("very special case, "+x+" is not in ("+a+","+b+")"); //just for debugging
+			return (x != a); //if x is on the boundary
+		}
 		if (b < a) { //a < 2^m && b >= 0
 			
 			if (x < a)
