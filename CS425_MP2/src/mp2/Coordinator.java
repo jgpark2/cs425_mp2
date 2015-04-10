@@ -221,11 +221,14 @@ public class Coordinator extends Thread {
 		//according to Piazza post @350, this probably doesn't involve messages
 		//Check to see that node id exists in system
 		boolean exists = false;
+		int nodeIdx = -1;
 		for (int i=0; i<p2p.nodes.size(); i++) {
 			Node n = p2p.nodes.get(i);
 			int nodeid = n.getNodeId();
-			if (id == nodeid)
+			if (id == nodeid) {
 				exists = true;
+				nodeIdx = i;
+			}
 		}
 		if (!exists) {
 			System.out.println("Node with id "+id+" does not exist in the system; try again");
@@ -234,7 +237,7 @@ public class Coordinator extends Thread {
 		}
 		
 		//TODO: call leave method on node id
-		
+		p2p.nodes.get(nodeIdx).onLeave();
 	}
 	
 	

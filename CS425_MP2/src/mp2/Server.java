@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -151,7 +153,20 @@ public class Server extends Thread {
 				System.out.println("Node "+node.getNodeId()+" set its successor to "+node.getSuccessor());
 			}
 			else if (words[1].compareTo("update_finger_table") == 0) {
-				node.updateFingerTable(Integer.parseInt(words[2]), Integer.parseInt(words[3])); 
+				node.updateFingerTable(Integer.parseInt(words[2]), Integer.parseInt(words[3]));
+			}
+			else if (words[1].compareTo("force_transfer") == 0)  {
+				ArrayList<Integer> key_str = new ArrayList<Integer>();
+				
+				//Add transferred keys to hashmap
+				for (int i=4; i<words.length-1; i++) {
+					Integer key = new Integer(words[i]);
+					node.keys.put(key, true);
+					key_str.add(key);
+				}
+				
+				Collections.sort(key_str);
+				System.out.println("DB: "+node.getNodeId()+" Added Keys: "+key_str.toString());
 			}
 			else if (words[1].compareTo("transfer_keys") == 0) {
 //				System.out.println("Node "+node.getNodeId()+" is processing a transfer_keys req message: \""+msg+"\"");

@@ -3,7 +3,9 @@ package mp2;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -34,6 +36,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * move:
  * 		req: "req transfer_keys <reqcnt> <placeholder> <senderID>"
  * 		ack: "ack transfer_keys <reqcnt> <placeholder> <list of keys: comma split> <senderID>"
+ * force_transfer: we don't need an ack for this
+ * 		
  */
 public class Node extends Thread {
 	
@@ -231,6 +235,7 @@ public class Node extends Thread {
 					p2p.send("req " + finger_suc_req + " " + this.id, this.id, 0);
 
 					//wait on reply
+					System.out.println("Athasth"+finger_suc_req);
 					while (finger_suc_reply.toreceive > 0) {}
 					
 					String finger_suc_reply_id = finger_suc_reply.validacks.get(0);
@@ -286,8 +291,8 @@ public class Node extends Thread {
 			
 			//p_id.updateFingerTable(id,i);
 			if (p == this.id) { //call our method
-				//this.updateFingerTable(this.id, i);
-				finger_table[i-1].node = this.id;
+				this.updateFingerTable(this.id, i);
+				//finger_table[i-1].node = this.id;
 			}
 			else { //don't need to wait for a reply
 				String update_req = "update_finger_table "+this.id+" "+i;
@@ -305,21 +310,81 @@ public class Node extends Thread {
 	 */
 	void updateFingerTable(int s, int i) {
 		//if (s in [this.id, finger[i].node))
-		int upper_bound = finger_table[i-1].node-1;
-		if (upper_bound<0) upper_bound = bound-1; 
-		if((s>=this.id && s<=upper_bound) || s == this.id) {
+		if(p2p.insideInterval(s,this.id,finger_table[i-1].node) || s == this.id) {
 			finger_table[i-1].node = s;
 			int p = predecessor;
 			System.out.println(this.id+" updated its finger table "+i+"th entry to "+s);
 			//p.update_finger_table(s, i);
 			//don't need to wait for a reply
-			/*String update_req = "update_finger_table "+s+" "+i; TODO: WHYYYYYYY?
-			p2p.send("req " + update_req + " " + this.id, this.id, p);*/
+			String update_req = "update_finger_table "+s+" "+i;
+			p2p.send("req " + update_req + " " + this.id, this.id, p);
 		}
 		
 	}
 	
+	/*
+	 * Routine to execute when this node is requested to leave
+	 */
+	public void onLeave() {
+		//Link back my predecessor and successor to eachother again
+		//UPDATING SUCCESOR AND PREDECESSOR
+		String set_pred_req = "set_predecessor "+"-"+" "+predecessor;
+		p2p.send("req " + set_pred_req + " " + predecessor, this.id, getSuccessor());			
+		String set_succ_req = "set_successor "+"-"+" "+getSuccessor();
+		p2p.send("req " + set_succ_req + " " + getSuccessor(), this.id, predecessor);	
+		
+		//UPDATE OTHERS
+		updateOthersOnLeave();
+		
+		//Transfer my keys to successor
+		//move keys in (predecessor, this.id] to successor
+		String returnValue = "";
+		
+		Set<Integer> keyset = keys.keySet();
+		Iterator<Integer> it = keyset.iterator();
+		while (it.hasNext()) {
+			Integer key = it.next();
+			if (!keys.get(key)) continue; //do not move key if it's not ours
+			//if (p2p.insideHalfInclusiveInterval(key.intValue(), range_start, getSuccessor()-1)) {
+				//take it out of our keys (doesn't really matter)
+				keys.put(key, false);
+				//add it to keysReturnValue
+				returnValue = returnValue + key.toString() + " ";
+			//}
+		}
+		
+		if (returnValue.compareTo("") != 0)
+			returnValue = returnValue.substring(0, returnValue.length()-1);
+		
+		String update_req = "force_transfer "+"-"+" "+this.id;
+		System.out.println("GIVE:"+returnValue);
+		p2p.send("req " + update_req + " " + returnValue, this.id, getSuccessor());
+		
+		p2p.coord.cmdComplete = true;
+		
+		//TODO: kill this thread somehow
+		//terminate();
+	}
 	
+	
+	/*
+	 * Whoever had me as a finger table successor should set it to my successor since I'll be gone
+	 */
+	private void updateOthersOnLeave() {
+		for (int i=1; i<=m; i++) {
+			int p = findPredecessor(this.id - (int)Math.pow(2,i-1));
+			if (p == this.id) { //call our method
+				this.updateFingerTable(getSuccessor(), i);
+			}
+			else { //don't need to wait for a reply
+				String update_req = "update_finger_table "+getSuccessor()+" "+i;
+				p2p.send("req " + update_req + " " + this.id, this.id, p); // i is 1-based
+			}
+			
+		}		
+	}
+
+
 	/*
 	 * This node has been asked to locate key
 	 * Send query to largest successor/finger entry <= key
@@ -465,28 +530,4 @@ public class Node extends Thread {
 		System.out.println("Node "+id+" has: "+keys_str.toString());
 	}
 
-	/*public String moveKeysTo(int sendId) {
-		
-		String ret = "";
-		
-		//iteration can start at index = id since node 0 never goes away
-		for(int i=id; i<bound; ++i) {
-			if(keys.get(i) && i>id && i<=sendId) {
-				//Remove keys by setting flag to false
-				keys.put(i,false);
-				ret += String.valueOf(i) + ",";
-			}	
-		}
-		
-		//Remove extra comma at the end
-		if (ret.charAt(ret.length()-1)==',')
-			ret.substring(0, ret.length()-1);
-		
-		if (DEBUG)
-			System.out.println("DB: "+id+" Removed Keys: "+ret);
-		
-		return ret;
-	}*/
-	
-	
 }
