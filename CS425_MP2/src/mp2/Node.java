@@ -215,6 +215,28 @@ public class Node extends Thread {
 			String set_succ_req = "set_successor "+this.id+" "+this.id;
 			p2p.send("req " + set_succ_req + " " + this.id, this.id, predecessor);	
 			
+			for (int i=1; i<m; i++) {
+				
+				if (p2p.insideInterval(finger_table[i].start, this.id, finger_table[i-1].node)
+						|| finger_table[i].start == this.id) {
+					finger_table[i].node = finger_table[i-1].node;
+				}
+				
+				else {
+					//finger[i].node = 0.find_successor(finger[i].start);
+					reqcnt++;
+					String finger_suc_req = "find_successor "+reqcnt+" " + finger_table[i].start;
+					AckTracker finger_suc_reply = new AckTracker(1);
+					recvacks.put(finger_suc_req, finger_suc_reply); //wait for a single reply
+					p2p.send("req " + finger_suc_req + " " + this.id, this.id, 0);
+
+					//wait on reply
+					while (finger_suc_reply.toreceive > 0) {}
+					
+					String finger_suc_reply_id = finger_suc_reply.validacks.get(0);
+					finger_table[i].node = Integer.parseInt(finger_suc_reply_id);
+				}
+			}
 			
 			for(int i=1; i<=m; i++) {
 				System.out.println("Node "+this.id+"'s finger_table["+i+"] set as "+finger_table[i-1].start+"->"+finger_table[i-1].node);
@@ -244,24 +266,23 @@ public class Node extends Thread {
 			
 			//find last node p whose ith finger might be n
 			//p = find_predecessor(n-2^(i-1));
-			//int p = findPredecessor(this.id - (int)Math.pow(2,i-1));
-			
+			int p = findPredecessor(this.id - (int)Math.pow(2,i-1));
+			/*
 			reqcnt++;
 			//String finger_suc_req = "find_successor "+reqcnt+" " + finger_table[i].start;
-			String finger_pre_req = "find_predecessor "+reqcnt+" "+(this.id -(int)Math.pow(2,i-1));
+			String finger_pre_req = "find_predecessor "+reqcnt+" "+((this.id-(int)Math.pow(2,i-1)+bound)%bound);
 			
 			AckTracker finger_pre_reply = new AckTracker(1);
 			recvacks.put(finger_pre_req, finger_pre_reply); //wait for a single reply
 			p2p.send("req " + finger_pre_req + " " + this.id, this.id, 0);
-			
+			System.out.println("sths"+finger_pre_req);
 			//wait on reply
-			while (finger_pre_reply.toreceive > 0) {};//TODO: GETS STUCK HERE ATM
+			while (finger_pre_reply.toreceive > 0) {};
 			
 			String finger_pre_reply_id = finger_pre_reply.validacks.get(0);
 			int p = Integer.parseInt(finger_pre_reply_id);
 			System.out.println("Trying to Update Node "+finger_pre_reply_id+"'s "+i+"th finger table entry (succ) to me: "+this.id);
-			
-			
+			*/
 			
 			//p_id.updateFingerTable(id,i);
 			if (p == this.id) { //call our method
