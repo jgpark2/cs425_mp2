@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 
@@ -106,7 +107,9 @@ public class PeerToPeerLookupService {
 		PrintWriter outs = null;
 		
 		try {
-			socket = new Socket("127.0.0.1", 7500+recvId); //this generated an error!
+			socket = new Socket("127.0.0.1",7500+recvId); //this generated an error!
+			//socket.setReuseAddress(true); //Needed for re-using sockets
+			//socket.bind(new InetSocketAddress());
 			//the 6th node to get added had an error trying to send a message in join
 			outs = new PrintWriter(socket.getOutputStream(), true);
 			outs.println(msg);

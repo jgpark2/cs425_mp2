@@ -350,10 +350,21 @@ public class Node extends Thread {
 		
 		String update_req = "force_transfer "+"-"+" "+this.id;
 		if (DEBUG)
-			System.out.println("GIVE:"+returnValue);
+			System.out.println("DB: GIVE:"+returnValue);
 		p2p.send("req " + update_req + " " + returnValue, this.id, getSuccessor());
 		
-		//TODO: kill this thread somehow... dont AHVE to
+		//kill this thread and close socket
+		try {
+			server.join();
+			try {
+				server.server.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		System.out.println("socket closed");
 	}
 	
 	
@@ -362,12 +373,18 @@ public class Node extends Thread {
 	 */
 	private void updateOthersOnLeave() {
 		for (int i=1; i<=m; i++) {
-			int p = findPredecessor(this.id - (int)Math.pow(2,i-1));
+			int lookUpNode = (this.id - (int)Math.pow(2,i-1) + (int)Math.pow(2,m)) % (int)Math.pow(2,m);
+			
+			int p = 0;
+			
 			if (p == this.id) { //call our method
-				this.updateFingerTable(getSuccessor(), i);
+				//System.out.println("wat");
+				this.updateFingerTableOnLeave(getSuccessor(), i, this.id);
 			}
 			else { //don't need to wait for a reply
-				String update_req = "update_finger_table "+getSuccessor()+" "+i;
+				if (DEBUG)
+					System.out.println(p+"! PLEASE UPDATE "+i+" TO "+getSuccessor());
+				String update_req = "leaving_update_finger_table "+getSuccessor()+" "+i;
 				p2p.send("req " + update_req + " " + this.id, this.id, p); // i is 1-based
 			}
 			
@@ -511,12 +528,9 @@ public class Node extends Thread {
 	 * Ask this Node (node n) to find id's predecessor
 	 */
 	private int findPredecessor(int id) {
-
 		int nprime = this.id;
 		int nprimesuccessor = this.getSuccessor();
-		
 		while (!p2p.insideHalfInclusiveInterval(id, nprime, nprimesuccessor)) {
-			
 			if (nprime == this.id) { //call our method
 				nprime = this.closestPrecedingFinger(id);
 				
@@ -632,4 +646,51 @@ public class Node extends Thread {
 			System.out.println("Start: "+finger_table[i].start+", Node: "+finger_table[i].node);
 		}
 	}
+
+
+	public void updateFingerTableOnLeave(int s, int i, int senderID) {
+			//System.out.println(id+ " "+s+" "+i+" "+senderID+"..."+finger_table[i-1].node);
+			if(finger_table[i-1].node == senderID || p2p.insideInterval(s,this.id,finger_table[i-1].node)){// || s == this.id) { //Even if u get ur message back, you need to relay it backawrds again!
+					
+				//System.out.println("taken");
+				for(int j=0; j<m; ++j) {
+					if(finger_table[j].node==senderID) {
+						finger_table[j].node = s;
+					}
+				}
+				int p = predecessor;
+				
+				if (DEBUG)
+					System.out.println(id+":" + p+"! PLEASE UPDATE "+i+" TO "+s);
+				
+				String update_req = "leaving_update_finger_table "+s+" "+i;
+				p2p.send("req " + update_req + " " + senderID, senderID, p);
+			}
+			else if (i>=0 && i<m && finger_table[i].node == senderID) {
+				//...potential edge case??
+				//System.out.println(id+"boohoo");
+				finger_table[i].node = s;
+			}
+			/*if(finger_table[i-1].node == senderID) {
+				if (DEBUG)
+					System.out.println("Node "+this.id+" updating finger["+i+"] to "+finger_table[i-1].start+"->"+s);
+				finger_table[i-1].node = s;
+				int p = predecessor;
+				
+				String update_req = "update_finger_table "+s+" "+i;
+				p2p.send("req " + update_req + " " + senderID, this.id, p);
+			}
+			else if(p2p.insideInterval(s,this.id,finger_table[i-1].node) || s == this.id) {
+				if (DEBUG)
+					System.out.println("Node "+this.id+" updating finger["+i+"] to "+finger_table[i-1].start+"->"+s);
+				finger_table[i-1].node = s;
+				int p = predecessor;
+				
+				String update_req = "update_finger_table "+s+" "+i;
+				p2p.send("req " + update_req + " " + senderID, this.id, p);
+			}*/
+			
+		
+	}
+	
 }

@@ -3,8 +3,10 @@ package mp2;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -19,14 +21,17 @@ public class Server extends Thread {
 	//creator of this thread
 	private Node node;
 	//The socket that the Node listens on
-	private ServerSocket server;
+	ServerSocket server;
+	public volatile boolean running = true;
 	
 	
 	protected Server(Node node) {
 		this.node = node;
 		
 		try {
-			server = new ServerSocket(7500 + node.getNodeId()); //guarantees unique port
+			server = new ServerSocket();
+			server.setReuseAddress(true); //Set to reuse, need to do it on unbound socket first, then bind it later
+			server.bind(new InetSocketAddress(7500 + node.getNodeId())); //guarantees unique port
         } catch (IOException e) {
 			System.out.println("Could not listen on port " + (7500 + node.getNodeId()));
 			e.printStackTrace();
@@ -42,17 +47,20 @@ public class Server extends Thread {
 	 * The main purpose of this thread is to accept connections from other nodes
 	 */
 	public void run() {
-		
-		Socket socket;
+	
+		Socket socket = null;
 		
 		while (true) {
 			try {
 				socket = server.accept();
 				handleNewSocket(socket);
+			} catch (SocketException e) {
+				break;
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
+	
 		
 	}
 	
@@ -151,6 +159,10 @@ public class Server extends Thread {
 			}
 			else if (words[1].compareTo("update_finger_table") == 0) {
 				node.updateFingerTable(Integer.parseInt(words[2]), Integer.parseInt(words[3]));
+			}
+			else if (words[1].compareTo("leaving_update_finger_table") == 0) { //TODO:
+				//special finger table update request from a leaving node
+				node.updateFingerTableOnLeave(Integer.parseInt(words[2]), Integer.parseInt(words[3]), Integer.parseInt(words[4]));
 			}
 			else if (words[1].compareTo("force_transfer") == 0)  {
 				ArrayList<Integer> key_str = new ArrayList<Integer>();
