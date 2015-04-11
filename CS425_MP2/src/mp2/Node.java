@@ -1,14 +1,10 @@
 package mp2;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.concurrent.ConcurrentHashMap;
 
 /*
@@ -41,8 +37,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Node extends Thread {
 	
-	protected final int m = 8;
-	protected final int bound = 256;
+	protected static final int m = 8;
+	protected static final int bound = 256;
 	
 	private final boolean DEBUG = true;
 	
@@ -123,9 +119,11 @@ public class Node extends Thread {
 	 */
 	private void onJoin() {
 		initializeFingerTable();
-		System.out.println("Initd");
+		if (DEBUG)
+			System.out.println("Initd");
 		if (!initialnode) {
 			updateOthers();
+//			System.out.println("done with updateOthers");
 			
 			//move keys in (predecessor, this.id] from successor
 			reqcnt++;
@@ -134,8 +132,12 @@ public class Node extends Thread {
 			recvacks.put(key_req, move_reply); //wait for a single reply
 			p2p.send("req " + key_req + " " + this.id, this.id,  getSuccessor());
 			
+//			if (DEBUG)
+//				System.out.println("Going to wait on a find_successor reply: "+key_req);
 			//wait on reply
 			while (move_reply.toreceive > 0) {}
+//			if (DEBUG)
+//				System.out.println("Done waiting on a find_successor reply");
 			
 			String[] reply = move_reply.validacks.get(0).split("\\s+");
 			
@@ -148,7 +150,7 @@ public class Node extends Thread {
 				key_str.add(key);
 			}
 			
-			Collections.sort(key_str);
+			Collections.sort(key_str); //TODO: why is this here?
 			if (DEBUG)
 				System.out.println("DB: "+id+" Added Keys: "+key_str.toString());
 		}
@@ -172,7 +174,8 @@ public class Node extends Thread {
 		}
 		
 		if (initialnode) { //this is the first node in the network
-			System.out.println("Initializing finger table for inital node "+id);
+			if (DEBUG)
+				System.out.println("Initializing finger table for inital node "+id);
 			//Logically, all connections are to ourself here
 			for (int i=0; i<m; i++) {
 				finger_table[i].node = 0;
@@ -193,7 +196,8 @@ public class Node extends Thread {
 			
 			String pred_reply_id = predecessor_reply.validacks.get(0);
 			this.predecessor = Integer.parseInt(pred_reply_id);
-			System.out.println("Node "+this.id+"'s predecessor just set as "+pred_reply_id);
+			if (DEBUG)
+				System.out.println("Node "+this.id+"'s predecessor just set as "+pred_reply_id);
 			
 			
 			//DEFINING SUCCESSOR
@@ -209,7 +213,8 @@ public class Node extends Thread {
 			
 			String reply_id = successor_reply.validacks.get(0);
 			finger_table[0].node = Integer.parseInt(reply_id); //Set Successor
-			System.out.println("Node "+this.id+"'s successor just set as "+finger_table[0].node);
+			if (DEBUG)
+				System.out.println("Node "+this.id+"'s successor just set as "+finger_table[0].node);
 			
 			
 			//UPDATING SUCCESOR AND PREDECESSOR
@@ -236,7 +241,7 @@ public class Node extends Thread {
 
 //					System.out.println("Node "+this.id+" going to wait on find_successor reply: "+finger_suc_req);
 					//wait on reply
-					System.out.println("Athasth"+finger_suc_req);
+//					System.out.println("Athasth"+finger_suc_req);
 					while (finger_suc_reply.toreceive > 0) {}
 //					System.out.println("Node "+this.id+" done waiting on find_successor reply");
 					
@@ -245,8 +250,10 @@ public class Node extends Thread {
 				}
 			}
 			
-			for(int i=1; i<=m; i++) {
-				System.out.println("Node "+this.id+"'s finger_table["+i+"] set as "+finger_table[i-1].start+"->"+finger_table[i-1].node);
+			if (DEBUG) {
+				for(int i=1; i<=m; i++) {
+					System.out.println("Node "+this.id+"'s finger_table["+i+"] set as "+finger_table[i-1].start+"->"+finger_table[i-1].node);
+				}
 			}
 
 		}
@@ -257,17 +264,7 @@ public class Node extends Thread {
 	/*
 	 * Update all nodes whose finger tables should refer to this Node
 	 */
-	private void updateOthers() {
-		System.out.println("Node "+this.id+" is running updateOthers");
-		
-			/*if (p2p.insideInterval(finger_table[i].start, this.id, finger_table[i-1].node)
-					|| finger_table[i].start == this.id) {
-				finger_table[i].node = finger_table[i-1].node;
-			}*/
-			
-			//finger[i].node = 0.find_successor(finger[i].start);
-		
-		
+	private void updateOthers() {		
 		
 		//for i=1 to m (8)
 		for (int i=1; i<=m; i++) {
@@ -275,36 +272,15 @@ public class Node extends Thread {
 			//find last node p whose ith finger might be n
 			//p = find_predecessor(n-2^(i-1));
 			int p = findFingerPredecessor(this.id - (int)Math.pow(2,i-1));
-//			System.out.println();
-			/*
-			reqcnt++;
-			//String finger_suc_req = "find_successor "+reqcnt+" " + finger_table[i].start;
-			String finger_pre_req = "find_predecessor "+reqcnt+" "+((this.id-(int)Math.pow(2,i-1)+bound)%bound);
-			
-			AckTracker finger_pre_reply = new AckTracker(1);
-			recvacks.put(finger_pre_req, finger_pre_reply); //wait for a single reply
-			p2p.send("req " + finger_pre_req + " " + this.id, this.id, 0);
-			System.out.println("sths"+finger_pre_req);
-			//wait on reply
-			while (finger_pre_reply.toreceive > 0) {};
-			
-			String finger_pre_reply_id = finger_pre_reply.validacks.get(0);
-			int p = Integer.parseInt(finger_pre_reply_id);
-			System.out.println("Trying to Update Node "+finger_pre_reply_id+"'s "+i+"th finger table entry (succ) to me: "+this.id);
-			*/
-			
-			//p_id.updateFingerTable(id,i);
-//			System.out.print("Node "+p+" is the predecessor of "+(this.id - (int)Math.pow(2,i-1)));
-//			System.out.println(", and will be told to change its "+i+"th finger to "+this.id);
-			if (p == this.id) { //call our method
-				//this.updateFingerTable(this.id, i); //we shouldn't update our own joining finger table
-				//finger_table[i-1].node = this.id;
-			}
-			else { //don't need to wait for a reply
+
+			if (!(p == this.id)) { //we shouldn't update our own joining finger table
+				//don't need to wait for a reply
 				String update_req = "update_finger_table "+this.id+" "+i;
 //				System.out.println("Node "+this.id+" sending update_finger_table request to "+p+": "+"req " + update_req + " " + this.id);
 				p2p.send("req " + update_req + " " + this.id, this.id, p); // i is 1-based
 			}
+			
+//			System.out.println("Finished with i="+i+" round of for loop in updateOthers");
 			
 		}
 
@@ -322,7 +298,8 @@ public class Node extends Thread {
 		
 		//if (s in [this.id, finger[i].node))
 		if(p2p.insideInterval(s,this.id,finger_table[i-1].node) || s == this.id) {
-			System.out.println("Node "+this.id+" updating finger["+i+"] to "+finger_table[i-1].start+"->"+s);
+			if (DEBUG)
+				System.out.println("Node "+this.id+" updating finger["+i+"] to "+finger_table[i-1].start+"->"+s);
 			finger_table[i-1].node = s;
 			int p = predecessor;
 			//p.update_finger_table(s, i);
@@ -368,7 +345,8 @@ public class Node extends Thread {
 			returnValue = returnValue.substring(0, returnValue.length()-1);
 		
 		String update_req = "force_transfer "+"-"+" "+this.id;
-		System.out.println("GIVE:"+returnValue);
+		if (DEBUG)
+			System.out.println("GIVE:"+returnValue);
 		p2p.send("req " + update_req + " " + returnValue, this.id, getSuccessor());
 		
 		p2p.coord.cmdComplete = true;
@@ -489,7 +467,11 @@ public class Node extends Thread {
 	 * as true
 	 */
 	protected void find(int key) {
-		System.out.println("Node "+findSuccessor(key)+" has key "+key);
+		int nodeId = this.id;
+		if (!keys.get(key)) { //go through algorithm to find key
+			nodeId = findSuccessor(key);
+		}
+		System.out.println("Node "+nodeId+" has key "+key);
 		p2p.coord.cmdComplete = true;
 	}
 	
@@ -614,16 +596,32 @@ public class Node extends Thread {
 	}
 
 
+	/*
+	 * Used in show commands
+	 * format is node-identifier key1 key2 … key_last
+	 */
 	public void printKeys() {
 		
-		ArrayList<Integer> keys_str = new ArrayList<Integer>();
+		StringBuilder keys_str = new StringBuilder();
+		keys_str.append(this.id); 
+		
+		ArrayList<Integer> keys_list = new ArrayList<Integer>();
 		
 		for(int i=0; i<bound; i++) {
-			if(keys.get(i))
-				keys_str.add(i);
+			if(keys.get(i)) {
+				keys_str.append(" " + i);
+				keys_list.add(i);
+			}
 		}
 		
-		System.out.println("Node "+id+" has: "+keys_str.toString());
+		try {
+			p2p.out.write(keys_str.toString()+"\n");
+			p2p.out.flush();
+//			System.out.println("Node "+id+" has: "+keys_list.toString()+"\n");
+		} catch (IOException e) {
+			System.out.println("Could not print keys to out stream");
+			e.printStackTrace();
+		}
 	}
 
 

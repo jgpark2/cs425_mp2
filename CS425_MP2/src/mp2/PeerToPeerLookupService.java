@@ -13,10 +13,9 @@ import java.util.ArrayList;
  */
 public class PeerToPeerLookupService {
 	
-	protected static int m = 8;
-	
 	//This is where all output from "show" commands goes
 	//To write to: out.write(strtowrite+"\n"); //it needs this newline!
+	//then call: out.flush();
 	protected BufferedWriter out;
 	
 	//While node identifiers & keys can only be 0-255, we'll just use int types
@@ -52,12 +51,16 @@ public class PeerToPeerLookupService {
 
 			try {
 				out = new BufferedWriter(new PrintWriter(args[1]));
+//				System.out.println("PeerToPeer out is file "+args[1]);
 			} catch (FileNotFoundException e) {
 				System.out.println("Couldn't create output file");
 				e.printStackTrace();
 				out = new BufferedWriter(new OutputStreamWriter(System.out));
 			}
 			
+		}
+		else {
+//			System.out.println("PeerToPeer out is System.out");
 		}
 		
 		nodes = new ArrayList<Node>();
@@ -82,7 +85,7 @@ public class PeerToPeerLookupService {
 	 * Eliminates confusion about sockets closing on one or both ends
 	 * sendId = sender's ID/Source, recvID = receipient/Destination  
 	 */
-	protected int send(String msg, int sendId, int recvId) {
+	protected synchronized int send(String msg, int sendId, int recvId) {
 		int ret = -1;
 		
 		//Check to see that node id exists in system
@@ -103,7 +106,8 @@ public class PeerToPeerLookupService {
 		PrintWriter outs = null;
 		
 		try {
-			socket = new Socket("127.0.0.1", 7500+recvId);
+			socket = new Socket("127.0.0.1", 7500+recvId); //this generated an error!
+			//the 6th node to get added had an error trying to send a message in join
 			outs = new PrintWriter(socket.getOutputStream(), true);
 			outs.println(msg);
 			ret = 0;
@@ -142,9 +146,9 @@ public class PeerToPeerLookupService {
 		if (b < a) { //a < 2^m && b >= 0
 			
 			if (x < a)
-				x += (int)Math.pow(2, m);
+				x += (int)Math.pow(2, Node.m);
 			
-			b += (int)Math.pow(2, m);
+			b += (int)Math.pow(2, Node.m);
 		}
 		return (x > a) && (x < b);
 	}
@@ -159,9 +163,9 @@ public class PeerToPeerLookupService {
 		if (b < a) { //a <= 2^m && b >= 0
 			
 			if (x < a)
-				x += (int)Math.pow(2, m);
+				x += (int)Math.pow(2, Node.m);
 			
-			b += (int)Math.pow(2, m);
+			b += (int)Math.pow(2, Node.m);
 		}
 		return ((x > a) && (x < b)) || (x==b);
 	}

@@ -16,8 +16,6 @@ import java.util.Set;
  */
 public class Server extends Thread {
 	
-	protected int m;
-	
 	//creator of this thread
 	private Node node;
 	//The socket that the Node listens on
@@ -26,7 +24,6 @@ public class Server extends Thread {
 	
 	protected Server(Node node) {
 		this.node = node;
-		this.m = node.m;
 		
 		try {
 			server = new ServerSocket(7500 + node.getNodeId()); //guarantees unique port
@@ -234,11 +231,9 @@ public class Server extends Thread {
 			}
 			
 			if (updaterecvacks) {
-				System.out.println(node.getNodeId() + "get: " +msgId);
+//				System.out.println(node.getNodeId() + "get: " +msgId);
 				String returnValue = words[4];
 				AckTracker replyTracker = node.recvacks.get(msgId);
-				if(replyTracker==null)
-					System.out.println("AHA");
 				replyTracker.validacks.add(returnValue);
 				replyTracker.toreceive--;
 			}

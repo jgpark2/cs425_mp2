@@ -10,8 +10,6 @@ import java.io.InputStreamReader;
  */
 public class Coordinator extends Thread {
 	
-	protected int m;
-	
 	//The Chord system that this Coordinator belongs to
 	protected PeerToPeerLookupService p2p;
 
@@ -24,7 +22,6 @@ public class Coordinator extends Thread {
 	
 	protected Coordinator (PeerToPeerLookupService p2p) {
 		this.p2p = p2p;
-		this.m = p2p.m;
 		cmdin = new BufferedReader(new InputStreamReader(System.in));
 		
 		new Thread(this, "CommandInput").start();
@@ -46,6 +43,7 @@ public class Coordinator extends Thread {
 				cmdComplete = false;
 				
 				if (cmd.lastIndexOf("join ") == 0) { //join p
+//					System.out.println("Received a join request");
 					try {
 						int p = Integer.parseInt(cmd.substring(5));
 						join(p);
@@ -82,6 +80,7 @@ public class Coordinator extends Thread {
 				}
 				
 				else if (cmd.lastIndexOf("show ") == 0) { //show p
+//					System.out.println("Received a show request");
 					try {
 						int p = Integer.parseInt(cmd.substring(5));
 						show(p);
@@ -120,6 +119,7 @@ public class Coordinator extends Thread {
 				
 				//ensure that two commands will not be processed simultaneously
 				while (!cmdComplete) {}
+//				System.out.println("cmdComplete has been marked true!");
 				
 			}
 			
@@ -140,7 +140,6 @@ public class Coordinator extends Thread {
 	/*
 	 * Coordinator has been asked to join node with parameter id; the coordinator
 	 * creates a new Node thread, which then takes steps to add itself
-	 * TODO:
 	 * Once the proper join procedure has finished, Node must mark cmdComplete
 	 * as true
 	 */
@@ -178,7 +177,6 @@ public class Coordinator extends Thread {
 	/*
 	 * Coordinator has been asked to ask node with parameter id to locate
 	 * key; if node id does not exist in system, then command is invalid
-	 * TODO:
 	 * Once the proper procedure has finished, Node must mark cmdComplete
 	 * as true
 	 */
@@ -267,24 +265,28 @@ public class Coordinator extends Thread {
 	 * Coordinator has been asked to start an output that lists the keys
 	 * stored locally at each of the nodes, in increasing order of the node
 	 * ids (start at node 0, send messages to successors)
-	 * TODO:
 	 * Once the proper procedure has finished, Node must mark cmdComplete
 	 * as true
 	 */
 	protected void showall() {
-		//TODO: call show all method on node 0
-		for (int i=0; i<p2p.nodes.size(); i++) {
-			Node n = p2p.nodes.get(i);
-			show( n.getNodeId());
-			
+		//print in increasing node id
+		for (int i=0; i<Node.bound; i++) { //go through all possible ids
+			for (int j=0; j<p2p.nodes.size(); j++) { //check if the increasing id is a valid node
+				Node n = p2p.nodes.get(j);
+				if (n.getNodeId() == i) {
+					n.printKeys();
+					break;
+				}
+			}
 		}
+//		System.out.println("Here's where show all should mark cmdComplete");
+		cmdComplete = true;
 	}
 	
 	
 	/*
 	 * Coordinator has been asked to start an output that lists the keys
 	 * stored locally at node with parameter id, provided that it exists
-	 * TODO:
 	 * Once the proper join procedure has finished, Node must mark cmdComplete
 	 * as true
 	 */
@@ -308,8 +310,8 @@ public class Coordinator extends Thread {
 		}
 		
 		n.printKeys();
+//		System.out.println("Here's where show should mark cmdComplete");
 		cmdComplete = true;
-		return;
 	}
 	
 }
