@@ -113,7 +113,7 @@ public class Server extends Thread {
 		
 		String[] words = msg.split("\\s+");
 		String sendIdString = words[words.length-1];
-		String msgId = words[1] + " " + words[2] + " " + words[3]; //TODO: three-word identifiers
+		String msgId = words[1] + " " + words[2] + " " + words[3];
 		
 		if (words[0].compareTo("req") == 0) {
 			
@@ -160,7 +160,7 @@ public class Server extends Thread {
 			else if (words[1].compareTo("update_finger_table") == 0) {
 				node.updateFingerTable(Integer.parseInt(words[2]), Integer.parseInt(words[3]));
 			}
-			else if (words[1].compareTo("leaving_update_finger_table") == 0) { //TODO:
+			else if (words[1].compareTo("leaving_update_finger_table") == 0) {
 				//special finger table update request from a leaving node
 				node.updateFingerTableOnLeave(Integer.parseInt(words[2]), Integer.parseInt(words[3]), Integer.parseInt(words[4]));
 			}

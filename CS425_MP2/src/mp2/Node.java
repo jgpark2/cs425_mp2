@@ -40,7 +40,7 @@ public class Node extends Thread {
 	protected static final int m = 8;
 	protected static final int bound = 256;
 	
-	private final boolean DEBUG = true;
+	private final boolean DEBUG = false;
 	
 	//Used in full-capacity ArrayList in PeerToPeerLookupService
 	private int id;
@@ -118,6 +118,7 @@ public class Node extends Thread {
 	 * as true
 	 */
 	private void onJoin() {
+		
 		initializeFingerTable();
 		if (DEBUG)
 			System.out.println("Initd");
@@ -314,11 +315,8 @@ public class Node extends Thread {
 	 * Routine to execute when this node is requested to leave
 	 */
 	public void onLeave() {
-		if(this.id==0) {
-			System.out.println("Please No!!");
-			p2p.coord.cmdComplete = true;
-		}
-		//Link back my predecessor and successor to eachother again
+		
+		//Link back my predecessor and successor to each other again
 		//UPDATING SUCCESOR AND PREDECESSOR
 		String set_pred_req = "set_predecessor "+"-"+" "+predecessor;
 		p2p.send("req " + set_pred_req + " " + predecessor, this.id, getSuccessor());			
@@ -364,7 +362,8 @@ public class Node extends Thread {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		System.out.println("socket closed");
+		if (DEBUG)
+			System.out.println("socket closed");
 	}
 	
 	
@@ -632,7 +631,6 @@ public class Node extends Thread {
 		try {
 			p2p.out.write(keys_str.toString()+"\n");
 			p2p.out.flush();
-//			System.out.println("Node "+id+" has: "+keys_list.toString()+"\n");
 		} catch (IOException e) {
 			System.out.println("Could not print keys to out stream");
 			e.printStackTrace();

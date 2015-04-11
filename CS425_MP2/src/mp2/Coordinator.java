@@ -90,7 +90,7 @@ public class Coordinator extends Thread {
 					}
 				}
 				
-				//TEMPORARY UTILITY METHOD
+				//utility method to examine the finger table of a node
 				else if (cmd.lastIndexOf("finger ") == 0) { //finger p
 					int p = Integer.parseInt(cmd.substring(7));
 					boolean exists = false;
@@ -112,6 +112,12 @@ public class Coordinator extends Thread {
 					cmdComplete = true;
 				}
 				
+				//utility method for performance analysis
+				else if (cmd.lastIndexOf("message count") == 0) {
+					System.out.println("Current message count: "+p2p.messageCount);
+					cmdComplete = true;
+				}
+				
 				else {
 					System.out.println("Command was not correctly fomatted; try again");
 					continue;
@@ -119,7 +125,6 @@ public class Coordinator extends Thread {
 				
 				//ensure that two commands will not be processed simultaneously
 				while (!cmdComplete) {}
-//				System.out.println("cmdComplete has been marked true!");
 				
 			}
 			
@@ -143,12 +148,12 @@ public class Coordinator extends Thread {
 	 * Once the proper join procedure has finished, Node must mark cmdComplete
 	 * as true
 	 */
-	protected void join(int id) {
+	protected int join(int id) {
 		//Error checking
 		if (id < 0 || id > 255) {
 			System.out.println("Id is assumed to be in the range 0 to 255; try again");
 			cmdComplete = true;
-			return;
+			return -1;
 		}
 		
 		//according to Piazza post @350, this probably doesn't involve messages
@@ -163,7 +168,7 @@ public class Coordinator extends Thread {
 		if (exists) {
 			System.out.println("Node with id "+id+" already exists in the system; try again");
 			cmdComplete = true;
-			return;
+			return -1;
 		}
 		
 		//Create a thread that will simulate behavior of node with requested id
@@ -171,6 +176,8 @@ public class Coordinator extends Thread {
 		
 		//add the new Node to p2p's ArrayList for administrative purposes (?)
 		p2p.nodes.add(p);
+		
+		return 0;
 	}
 	
 	
@@ -224,6 +231,7 @@ public class Coordinator extends Thread {
 	 * as true
 	 */
 	protected void leave(int id) {
+		
 		//Error checking
 		if (id < 0 || id > 255) {
 			System.out.println("Id is assumed to be in the range 0 to 255; try again");
@@ -256,11 +264,9 @@ public class Coordinator extends Thread {
 			return;
 		}
 		
-		//TODO: call leave method on node id
 		p2p.nodes.get(nodeIdx).onLeave();
 		
 		p2p.nodes.remove(nodeIdx);
-		
 		cmdComplete = true;
 	}
 	
