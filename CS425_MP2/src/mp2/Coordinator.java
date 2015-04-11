@@ -260,6 +260,10 @@ public class Coordinator extends Thread {
 		
 		//TODO: call leave method on node id
 		p2p.nodes.get(nodeIdx).onLeave();
+		
+		p2p.nodes.remove(nodeIdx);
+		
+		cmdComplete = true;
 	}
 	
 	

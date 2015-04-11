@@ -159,7 +159,7 @@ public class Server extends Thread {
 				ArrayList<Integer> key_str = new ArrayList<Integer>();
 				
 				//Add transferred keys to hashmap
-				for (int i=4; i<words.length-1; i++) {
+				for (int i=4; i<words.length; i++) {
 					Integer key = new Integer(words[i]);
 					node.keys.put(key, true);
 					key_str.add(key);

@@ -337,6 +337,10 @@ public class Node extends Thread {
 	 * Routine to execute when this node is requested to leave
 	 */
 	public void onLeave() {
+		if(this.id==0) {
+			System.out.println("Please No!!");
+			p2p.coord.cmdComplete = true;
+		}
 		//Link back my predecessor and successor to eachother again
 		//UPDATING SUCCESOR AND PREDECESSOR
 		String set_pred_req = "set_predecessor "+"-"+" "+predecessor;
@@ -371,10 +375,7 @@ public class Node extends Thread {
 		System.out.println("GIVE:"+returnValue);
 		p2p.send("req " + update_req + " " + returnValue, this.id, getSuccessor());
 		
-		p2p.coord.cmdComplete = true;
-		
-		//TODO: kill this thread somehow
-		//terminate();
+		//TODO: kill this thread somehow... dont AHVE to
 	}
 	
 	
