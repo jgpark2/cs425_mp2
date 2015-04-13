@@ -30,7 +30,7 @@ public class Coordinator extends Thread {
 
 	/*
 	 * The main purpose of this thread is to read commands from the
-	 * command line and do the administrative work for them
+	 * command line and do the administrative work involved with the commands
 	 */
 	public void run() {
 
@@ -43,7 +43,6 @@ public class Coordinator extends Thread {
 				cmdComplete = false;
 				
 				if (cmd.lastIndexOf("join ") == 0) { //join p
-//					System.out.println("Received a join request");
 					try {
 						int p = Integer.parseInt(cmd.substring(5));
 						join(p);
@@ -75,13 +74,12 @@ public class Coordinator extends Thread {
 					}
 				}
 				
-				else if (cmd.lastIndexOf("show all") == 0 //Piazza post @395 implies both should be supported
-						|| cmd.lastIndexOf("show-all") == 0) { //show all
+				else if (cmd.lastIndexOf("show all") == 0 //show all
+						|| cmd.lastIndexOf("show-all") == 0) { //Piazza post @395 implies both should be supported
 					showall();
 				}
 				
 				else if (cmd.lastIndexOf("show ") == 0) { //show p
-//					System.out.println("Received a show request");
 					try {
 						int p = Integer.parseInt(cmd.substring(5));
 						show(p);
@@ -89,28 +87,6 @@ public class Coordinator extends Thread {
 						System.out.println("Command was not correctly fomatted; try again");
 						continue;
 					}
-				}
-				
-				//utility method to examine the finger table of a node
-				else if (cmd.lastIndexOf("finger ") == 0) { //finger p
-					int p = Integer.parseInt(cmd.substring(7));
-					boolean exists = false;
-					Node n = null;
-					for (int i=0; i<p2p.nodes.size(); i++) {
-						n = p2p.nodes.get(i);
-						int nodeid = n.getNodeId();
-						if (p == nodeid) {
-							exists = true;
-							break;
-						}
-					}
-					if (!exists) {
-						System.out.println("Node with id "+p+" does not exist in the system; try again");
-					}
-					else {
-						n.showFingerTable();
-					}
-					cmdComplete = true;
 				}
 				
 				//utility method for performance analysis
@@ -126,6 +102,7 @@ public class Coordinator extends Thread {
 				
 				//ensure that two commands will not be processed simultaneously
 				while (!cmdComplete) {}
+				System.out.println("Command \""+cmd+"\" has been completed");
 				
 			}
 			
@@ -150,6 +127,7 @@ public class Coordinator extends Thread {
 	 * as true
 	 */
 	protected int join(int id) {
+		
 		//Error checking
 		if (id < 0 || id > 255) {
 			System.out.println("Id is assumed to be in the range 0 to 255; try again");
@@ -157,7 +135,6 @@ public class Coordinator extends Thread {
 			return -1;
 		}
 		
-		//according to Piazza post @350, this probably doesn't involve messages
 		//Check to see that node id doesn't already exist in system
 		boolean exists = false;
 		for (int i=0; i<p2p.nodes.size(); i++) {
@@ -175,7 +152,7 @@ public class Coordinator extends Thread {
 		//Create a thread that will simulate behavior of node with requested id
 		Node p = new Node(id, p2p);
 		
-		//add the new Node to p2p's ArrayList for administrative purposes (?)
+		//add the new Node to p2p's ArrayList for administrative purposes
 		p2p.nodes.add(p);
 		
 		return 0;
@@ -189,6 +166,7 @@ public class Coordinator extends Thread {
 	 * as true
 	 */
 	protected void find(int id, int key) {
+		
 		//Error checking
 		if (id < 0 || id > 255) {
 			System.out.println("Id is assumed to be in the range 0 to 255; try again");
@@ -202,7 +180,6 @@ public class Coordinator extends Thread {
 			return;
 		}
 		
-		//according to Piazza post @350, this probably doesn't involve messages
 		//Check to see that node id exists in system
 		int nodeIdx = -1;
 		for (int i=0; i<p2p.nodes.size(); i++) {
@@ -246,7 +223,6 @@ public class Coordinator extends Thread {
 			return;
 		}
 		
-		//according to Piazza post @350, this probably doesn't involve messages
 		//Check to see that node id exists in system
 		boolean exists = false;
 		int nodeIdx = -1;
@@ -265,8 +241,8 @@ public class Coordinator extends Thread {
 		}
 		
 		p2p.nodes.get(nodeIdx).onLeave();
-		
 		p2p.nodes.remove(nodeIdx);
+		
 		cmdComplete = true;
 	}
 	
@@ -274,7 +250,7 @@ public class Coordinator extends Thread {
 	/*
 	 * Coordinator has been asked to start an output that lists the keys
 	 * stored locally at each of the nodes, in increasing order of the node
-	 * ids (start at node 0, send messages to successors)
+	 * ids
 	 * Once the proper procedure has finished, Node must mark cmdComplete
 	 * as true
 	 */
@@ -289,7 +265,7 @@ public class Coordinator extends Thread {
 				}
 			}
 		}
-//		System.out.println("Here's where show all should mark cmdComplete");
+
 		cmdComplete = true;
 	}
 	
@@ -301,7 +277,7 @@ public class Coordinator extends Thread {
 	 * as true
 	 */
 	protected void show(int id) {
-		//according to Piazza post @350, this probably doesn't involve messages
+
 		//Check to see that node id exists in system
 		boolean exists = false;
 		Node n = null;
@@ -320,7 +296,7 @@ public class Coordinator extends Thread {
 		}
 		
 		n.printKeys();
-//		System.out.println("Here's where show should mark cmdComplete");
+
 		cmdComplete = true;
 	}
 	

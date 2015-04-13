@@ -5,8 +5,10 @@ public class AlgorithmWaitingThread extends Thread {
 	//creator of this thread
 	private Node node;
 	private int nodeId;
+	
 	//the algorithm this thread should execute
 	private String algorithm;
+	
 	//requesting node, if any
 	private int reqNode = -1;
 	//message to return to the requesting node, if any
@@ -51,7 +53,7 @@ public class AlgorithmWaitingThread extends Thread {
 		
 		//Find predecessor: find it, then send reply to requesting Node
 		if (algorithm.compareTo("find_predecessor") == 0) {
-			int returnValue = findPredecessor(Integer.parseInt(origMessageWords[3]));
+			int returnValue = findJustPredecessor(Integer.parseInt(origMessageWords[3]));
 			if(returnValue==-1)
 				return;
 			String sendReply = retMessage + " " + returnValue;
@@ -69,7 +71,7 @@ public class AlgorithmWaitingThread extends Thread {
 		
 		int id = Integer.parseInt(origMessageWords[3]);
 		
-		int nprime = findPredecessorOnly(id);
+		int nprime = findPredecessor(id);
 		
 		if (nprime == nodeId) {
 			return node.getSuccessor();
@@ -97,11 +99,10 @@ public class AlgorithmWaitingThread extends Thread {
 	/*
 	 * This thread's Node (node n) has been asked to find id's predecessor
 	 */
-	private int findPredecessor(int id) {
+	private int findJustPredecessor(int id) {
 		
 		//If you are this id's predecessor, return your nodeID
 		if(node.p2p.insideHalfInclusiveInterval(id, nodeId, node.getSuccessor())) {
-			//System.out.println("whee:"+nodeId);
 			return nodeId;
 		}
 		
@@ -115,12 +116,17 @@ public class AlgorithmWaitingThread extends Thread {
 		return -1;
 	}
 	
-	private int findPredecessorOnly(int id) {
+	
+	/*
+	 * The find_successor algorithm uses this helper function to find
+	 * the predecessor of the given id
+	 */
+	private int findPredecessor(int id) {
 		
 		int nprime = nodeId;
 		int nprimesuccessor = node.getSuccessor();
 		
-		//temporary sketchy fix to stop hanging:
+		//If the requested id is our own, we have that information
 		if (id == nodeId) {
 			return node.getPredecessor();
 		}
@@ -128,7 +134,6 @@ public class AlgorithmWaitingThread extends Thread {
 		while (!node.p2p.insideHalfInclusiveInterval(id, nprime, nprimesuccessor)) {
 			
 			if (nprime == nodeId) { //call our node's method
-				//System.out.println("got here; nprime: "+nprime+", nprimesuccessor: "+nprimesuccessor+", id: "+id);
 				nprime = node.closestPrecedingFinger(id);
 				
 				//set nprimesuccessor
@@ -142,11 +147,9 @@ public class AlgorithmWaitingThread extends Thread {
 					AckTracker successor_reply = new AckTracker(1);
 					node.recvacks.put(successorreq, successor_reply); //wait for a single reply
 					node.p2p.send("req " + successorreq + " " + nodeId, nodeId, nprime);
-					
-//					System.out.println("Node "+nodeId+"'s algorithmwaitingthread going to wait on successor reply...");
+
 					//wait on reply
 					while (successor_reply.toreceive > 0) {}
-//					System.out.println("Node "+nodeId+"'s algorithmwaitingthread done waiting on successor reply");
 					
 					String reply_id = successor_reply.validacks.get(0);
 					nprimesuccessor = Integer.parseInt(reply_id);
@@ -162,10 +165,8 @@ public class AlgorithmWaitingThread extends Thread {
 				node.recvacks.put(req, closest_preceding_finger_reply); //wait for a single reply
 				node.p2p.send("req " + req + " " + nodeId, nodeId, nprime);
 				
-//				System.out.println("Node "+nodeId+"'s algorithmwaitingthread going to wait on closest_preceding_finger reply...");
 				//wait on reply
 				while (closest_preceding_finger_reply.toreceive > 0) {}
-//				System.out.println("Node "+nodeId+"'s algorithmwaitingthread done waiting on closest_preceding_finger reply");
 				
 				String reply_finger = closest_preceding_finger_reply.validacks.get(0);
 				nprime = Integer.parseInt(reply_finger);
@@ -182,10 +183,8 @@ public class AlgorithmWaitingThread extends Thread {
 					node.recvacks.put(successorreq, successor_reply); //wait for a single reply
 					node.p2p.send("req " + successorreq + " " + nodeId, nodeId, nprime);
 					
-//					System.out.println("Node "+nodeId+"'s algorithmwaitingthread going to wait on successor reply...");
 					//wait on reply
 					while (successor_reply.toreceive > 0) {}
-//					System.out.println("Node "+nodeId+"'s algorithmwaitingthread done waiting on successor reply");
 					
 					String reply_id = successor_reply.validacks.get(0);
 					nprimesuccessor = Integer.parseInt(reply_id);

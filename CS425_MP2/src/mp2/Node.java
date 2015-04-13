@@ -2,7 +2,6 @@ package mp2;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,8 +39,6 @@ public class Node extends Thread {
 	protected static final int m = 8;
 	protected static final int bound = 256;
 	
-	private final boolean DEBUG = true;
-	
 	//Used in full-capacity ArrayList in PeerToPeerLookupService
 	private int id;
 
@@ -50,12 +47,12 @@ public class Node extends Thread {
 	//The Chord system that this Node belongs to
 	protected PeerToPeerLookupService p2p;
 	
-	//Each key is stored in a Node's ConcurrentHashMap, because threads
+	//Each key is stored in a Node's ConcurrentHashMap, as threads
 	//    inside the Node may try to simultaneously access it
 	//The <Integer,Boolean> pairs represent a key and whether this Node has it
-	//To increase efficiency just a little, when a key is moved from one Node
-	//    to another, it can just be marked false in the first Node's hashmap
-	ConcurrentHashMap<Integer,Boolean> keys;
+	//When a key is moved from one Node to another, it can just be marked
+	//    false in the first Node's hashmap
+	protected ConcurrentHashMap<Integer,Boolean> keys;
 	
 	//successor is implicitly the first entry in the finger table
 	protected Finger [] finger_table;
@@ -68,9 +65,13 @@ public class Node extends Thread {
 	protected ConcurrentHashMap<String, AckTracker> recvacks;
 	
 	//Number of operation requests made by this Node
+	//Utilized in matching ack messages to requests
 	protected volatile int reqcnt = 0;
 	
 	
+	/*
+	 * Node constructor; node 0 will always be the initial node
+	 */
 	protected Node (int id, PeerToPeerLookupService p2p) {
 		this.id = id;
 		this.initialnode = (id==0);
@@ -114,14 +115,11 @@ public class Node extends Thread {
 	
 	/*
 	 * Join algorithm for Chord system
-	 * Once the proper procedure has finished, Node must mark cmdComplete
-	 * as true
 	 */
 	private void onJoin() {
 		
 		initializeFingerTable();
-		if (DEBUG)
-			System.out.println("Initd");
+
 		if (!initialnode) {
 			updateOthers();
 			
@@ -145,10 +143,7 @@ public class Node extends Thread {
 				keys.put(key, true);
 				key_str.add(key);
 			}
-			
-//			Collections.sort(key_str);
-			if (DEBUG)
-				System.out.println("DB: "+id+" Added Keys: "+key_str.toString());
+
 		}
 		
 		//join algorithm finished, mark cmdComplete in Coordinator
@@ -170,8 +165,6 @@ public class Node extends Thread {
 		}
 		
 		if (initialnode) { //this is the first node in the network
-			if (DEBUG)
-				System.out.println("Initializing finger table for inital node "+id);
 			//Logically, all connections are to ourself here
 			for (int i=0; i<m; i++) {
 				finger_table[i].node = 0;
@@ -191,10 +184,7 @@ public class Node extends Thread {
 			while (predecessor_reply.toreceive > 0) {}
 			
 			String pred_reply_id = predecessor_reply.validacks.get(0);
-			this.predecessor = Integer.parseInt(pred_reply_id);
-			if (DEBUG)
-				System.out.println("Node "+this.id+"'s predecessor just set as "+pred_reply_id);
-			
+			this.predecessor = Integer.parseInt(pred_reply_id);			
 			
 			//DEFINING SUCCESSOR
 			//Ask my predecessor about his successor
@@ -208,10 +198,7 @@ public class Node extends Thread {
 			while (successor_reply.toreceive > 0) {}
 			
 			String reply_id = successor_reply.validacks.get(0);
-			finger_table[0].node = Integer.parseInt(reply_id); //Set Successor
-			if (DEBUG)
-				System.out.println("Node "+this.id+"'s successor just set as "+finger_table[0].node);
-			
+			finger_table[0].node = Integer.parseInt(reply_id); //Set Successor			
 			
 			//UPDATING SUCCESOR AND PREDECESSOR
 			//we don't need to wait for a return value (ack)
@@ -235,21 +222,11 @@ public class Node extends Thread {
 					recvacks.put(finger_suc_req, finger_suc_reply); //wait for a single reply
 					p2p.send("req " + finger_suc_req + " " + this.id, this.id, 0);
 
-//					if (DEBUG)
-//						System.out.println("Node "+this.id+" going to wait on find_successor reply: "+finger_suc_req);
 					//wait on reply
 					while (finger_suc_reply.toreceive > 0) {}
-//					if (DEBUG)
-//						System.out.println("Node "+this.id+" done waiting on find_successor reply");
 					
 					String finger_suc_reply_id = finger_suc_reply.validacks.get(0);
 					finger_table[i].node = Integer.parseInt(finger_suc_reply_id);
-				}
-			}
-			
-			if (DEBUG) {
-				for(int i=1; i<=m; i++) {
-					System.out.println("Node "+this.id+"'s finger_table["+i+"] set as "+finger_table[i-1].start+"->"+finger_table[i-1].node);
 				}
 			}
 
@@ -268,12 +245,9 @@ public class Node extends Thread {
 			
 			//find last node p whose ith finger might be n
 			//p = find_predecessor(n-2^(i-1));
-//			if (DEBUG)
-//				System.out.println("updateOthers going to start findFingerPredecessor call");
-			int modcalc = (this.id - (int)Math.pow(2,i-1) + (int)Math.pow(2,m)) % (int)Math.pow(2,m);
+			int modcalc = (this.id - (int)Math.pow(2,i-1) + (int)Math.pow(2,m))
+						  % (int)Math.pow(2,m);
 			int p = findFingerPredecessor(modcalc);
-//			if (DEBUG)
-//				System.out.println("updateOthers finished findFingerPredecessor call");
 
 			if (p != this.id) { //we shouldn't update our own joining finger table
 				//don't need to wait for a reply
@@ -291,28 +265,22 @@ public class Node extends Thread {
 	 * The parameter i is 1-indexed, and finger_table is 0-indexed
 	 */
 	void updateFingerTable(int s, int i) {
-		
-//		if (DEBUG)
-//			System.out.println("Node "+this.id+" received an updatefingertablerequest: s="+s+", i="+i);
-		
+
 		if (s == this.id)
 			return; //this node started this method chain in its join call, we should do nothing
 		
 		//if (s in [this.id, finger[i].node))
 		if(p2p.insideInterval(s,this.id,finger_table[i-1].node) || s == this.id) {
-//			if (DEBUG)
-//				System.out.println("Node "+this.id+" updating finger["+i+"] to "+finger_table[i-1].start+"->"+s);
 			finger_table[i-1].node = s;
 			int p = predecessor;
 			//p.update_finger_table(s, i);
 			//don't need to wait for a reply
 			String update_req = "update_finger_table "+s+" "+i;
-//			if (DEBUG)
-//				System.out.println("Node "+this.id+" sending along an updatefingertablerequest to "+p+": s="+s+", i="+i);
 			p2p.send("req " + update_req + " " + this.id, this.id, p);
 		}
 		
 	}
+	
 	
 	/*
 	 * Routine to execute when this node is requested to leave
@@ -337,21 +305,18 @@ public class Node extends Thread {
 		Iterator<Integer> it = keyset.iterator();
 		while (it.hasNext()) {
 			Integer key = it.next();
+			
 			if (!keys.get(key)) continue; //do not move key if it's not ours
-			//if (p2p.insideHalfInclusiveInterval(key.intValue(), range_start, getSuccessor()-1)) {
-				//take it out of our keys (doesn't really matter)
-				keys.put(key, false);
-				//add it to keysReturnValue
-				returnValue = returnValue + key.toString() + " ";
-			//}
+
+			keys.put(key, false);
+			//add it to keysReturnValue
+			returnValue = returnValue + key.toString() + " ";
 		}
 		
 		if (returnValue.compareTo("") != 0)
 			returnValue = returnValue.substring(0, returnValue.length()-1);
 		
 		String update_req = "force_transfer "+"-"+" "+this.id;
-		if (DEBUG)
-			System.out.println("DB: GIVE:"+returnValue);
 		p2p.send("req " + update_req + " " + returnValue, this.id, getSuccessor());
 		
 		//kill this thread and close socket
@@ -365,8 +330,6 @@ public class Node extends Thread {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		if (DEBUG)
-			System.out.println("socket closed");
 	}
 	
 	
@@ -375,19 +338,15 @@ public class Node extends Thread {
 	 */
 	private void updateOthersOnLeave() {
 		for (int i=1; i<=m; i++) {
-
 			int p = 0;
 			
 			if (p == this.id) { //call our method
 				this.updateFingerTableOnLeave(getSuccessor(), i, this.id);
 			}
 			else { //don't need to wait for a reply
-				if (DEBUG)
-					System.out.println(p+"! PLEASE UPDATE "+i+" TO "+getSuccessor());
 				String update_req = "leaving_update_finger_table "+getSuccessor()+" "+i;
 				p2p.send("req " + update_req + " " + this.id, this.id, p); // i is 1-based
 			}
-			
 		}		
 	}
 
@@ -395,7 +354,7 @@ public class Node extends Thread {
 	/*
 	 * Special case of finding the predecessor of a finger.start
 	 * in updateOthers(); we want to include nprime in the interval
-	 * ex. 128 - 2^7 = 0; this finger should update 0's 7th finger to 128!
+	 * ex. 128 - 2^7 = 0; this finger should update 0's 7th finger to 128
 	 * In other words, if we find a valid node that is equal to id, that is
 	 * what we should return
 	 */
@@ -405,12 +364,7 @@ public class Node extends Thread {
 		int nprimesuccessor = this.getSuccessor();
 		
 		//id != nprime is changed from findPredecessor code
-		while (id != nprime && !p2p.insideHalfInclusiveInterval(id, nprime, nprimesuccessor)) {
-//			if (DEBUG) {
-//				System.out.println("got inside while loop in findFingerPredecessor");
-//				System.out.println("id: "+id+", nprime="+nprime+", nprimesuccessor="+nprimesuccessor);
-//			}
-			
+		while (id != nprime && !p2p.insideHalfInclusiveInterval(id, nprime, nprimesuccessor)) {			
 			
 			if (nprime == this.id) { //call our method
 				nprime = this.closestPrecedingFinger(id);
@@ -486,8 +440,6 @@ public class Node extends Thread {
 	 * This node has been asked to locate key
 	 * Send query to largest successor/finger entry <= key
 	 * (if none exist, send query to successor(this))
-	 * Once the proper procedure has finished, Node must mark cmdComplete
-	 * as true
 	 */
 	protected void find(int key) {
 		int nodeId = this.id;
@@ -533,9 +485,12 @@ public class Node extends Thread {
 	 * Ask this Node (node n) to find id's predecessor
 	 */
 	private int findPredecessor(int id) {
+		
 		int nprime = this.id;
 		int nprimesuccessor = this.getSuccessor();
+		
 		while (!p2p.insideHalfInclusiveInterval(id, nprime, nprimesuccessor)) {
+			
 			if (nprime == this.id) { //call our method
 				nprime = this.closestPrecedingFinger(id);
 				
@@ -625,12 +580,9 @@ public class Node extends Thread {
 		StringBuilder keys_str = new StringBuilder();
 		keys_str.append(this.id); 
 		
-		ArrayList<Integer> keys_list = new ArrayList<Integer>();
-		
 		for(int i=0; i<bound; i++) {
 			if(keys.get(i)) {
 				keys_str.append(" " + i);
-				keys_list.add(i);
 			}
 		}
 		
@@ -644,18 +596,13 @@ public class Node extends Thread {
 	}
 
 
-	public void showFingerTable() {
-		System.out.println("Node "+this.id+"'s finger table:");
-		for (int i=0; i<m; i++) {
-			System.out.println("Start: "+finger_table[i].start+", Node: "+finger_table[i].node);
-		}
-	}
-
-
+	/*
+	 * Update all nodes whose finger tables should no longer refer to this Node
+	 */
 	public void updateFingerTableOnLeave(int s, int i, int senderID) {
 		
-		//Even if u get ur message back, you need to relay it backwards again!
-		if(finger_table[i-1].node == senderID || p2p.insideInterval(s,this.id,finger_table[i-1].node)){// || s == this.id)
+		//Even if the initial sender gets this message back, it needs to relay it backwards again
+		if(finger_table[i-1].node == senderID || p2p.insideInterval(s,this.id,finger_table[i-1].node)){
 
 			for(int j=0; j<m; ++j) {
 				if(finger_table[j].node==senderID) {
@@ -664,13 +611,11 @@ public class Node extends Thread {
 			}
 			
 			int p = predecessor;
-				
-			if (DEBUG)
-				System.out.println(id+":" + p+"! PLEASE UPDATE "+i+" TO "+s);
 			
 			String update_req = "leaving_update_finger_table "+s+" "+i;
 			p2p.send("req " + update_req + " " + senderID, senderID, p);
 		}
+		
 		else if (i>=0 && i<m && finger_table[i].node == senderID) {
 			finger_table[i].node = s;
 		}			

@@ -1,3 +1,2 @@
 Random is 10, the 10th round of N
 Phase 1 message count with p=4: 215
-Phase 2 message count with p=4: 204

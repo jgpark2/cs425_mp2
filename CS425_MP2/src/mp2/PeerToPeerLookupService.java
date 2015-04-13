@@ -1,185 +1,46 @@
 package mp2;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Random;
 
 /*
- * TODO: give instructions on how to run this code in cs425_mp2/mp2report.txt
+ * A class representing the starting point for a Chord-like
+ * peer-to-peer system of nodes and file pointers
  */
 public class PeerToPeerLookupService {
 	
 	//This is where all output from "show" commands goes
-	//To write to: out.write(strtowrite);
-	//then call: out.flush();
 	protected BufferedWriter out;
-	
-	//While node identifiers & keys can only be 0-255, we'll just use int types
-	//    for simplicity (consider int for loops)
 	
 	//Each node in the Chord system is represented as a Node thread in this
 	//    ArrayList, being removed from the ArrayList when it leaves, and
 	//    being added to the ArrayList when it joins
 	protected ArrayList<Node> nodes;
 	
-	//Coordinator thread to get and execute commands; should not be started
-	//    until node 0 has been set up (which shouldn't take that much time,
-	//    so maybe we won't worry about it)
+	//Coordinator thread to get and execute commands
 	protected Coordinator coord;
 	
+	//Stores the number of messages sent in the system
+	//Used for performance analysis, can be displayed with
+	//    "message count" utility method
 	public volatile int messageCount;
 
 
 	public static void main(String[] args) {
-		
 		PeerToPeerLookupService p2p = new PeerToPeerLookupService(args);
-
 		p2p.start();
-
-
-		//Performance evaluation, F = 70
-		p2p.sleep(250); //give a little bit of time for system to initialize
-		
-		int [] pvalues = {4,8,10,20,30};
-		ArrayList<Integer> joinedNodes;
-		int f = 70;
-		BufferedWriter dataout;
-		try {
-			dataout = new BufferedWriter(new PrintWriter("experiment.txt"));
-		} catch (FileNotFoundException e) {
-			System.out.println("Couldn't create experiment output file");
-			e.printStackTrace();
-			dataout = new BufferedWriter(new OutputStreamWriter(System.out));
-		}
-		Random r = new Random(10); //this seed will be changed by hand for each n=10 runs
-		try {
-			dataout.write("Random is 10, the 10th round of N"+"\n");
-			dataout.flush();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-
-//		for (int pvaluesi=0; pvaluesi<pvalues.length; pvaluesi++) {
-		
-			int pvaluesi = 0; //can't make new p2p every time (port 7500 is still in use)
-
-			joinedNodes = new ArrayList<Integer>();
-			
-			p2p.sleep(250);
-			
-			p2p.messageCount = 0; //reset message count for phase 1
-			
-			//Phase 1: add p nodes to system
-			for (int pi=0; pi<pvalues[pvaluesi]; pi++) {
-				
-				int success = -1;
-				int randid = 0;
-				while (success < 0) { //make sure we don't have a repeated id
-					randid = r.nextInt(Node.bound);
-					success = p2p.coord.join(randid);
-				}
-				
-				joinedNodes.add(randid);
-				
-				p2p.sleep(250); //emulate human typing delay, since cmdComplete isn't being used
-			}
-			
-			//Count the number of messages in Phase 1
-			try {
-				dataout.write("Phase 1 message count with p="+pvalues[pvaluesi]+": "+p2p.messageCount+"\n");
-				dataout.flush();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			
-			p2p.messageCount = 0; //reset message count for phase 2
-			
-			//Phase 2: perform find F times
-			for (int fi=0; fi<f; fi++) {
-				int randidx = r.nextInt(joinedNodes.size());
-				int p = joinedNodes.get(randidx);
-				int k = r.nextInt(Node.bound);
-				
-				p2p.coord.find(p, k);
-				
-				p2p.sleep(250); //emulate human typing delay, since cmdComplete isn't being used
-			}
-			
-			//Count the number of messages in Phase 2
-			try {
-				dataout.write("Phase 2 message count with p="+pvalues[pvaluesi]+": "+p2p.messageCount+"\n");
-				dataout.flush();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			
-			System.out.println("Done with p = "+pvalues[pvaluesi]);
-			
-//		}
-
-		
-/*
-		//Loop to tell us what values to join and find
-//		for (int pvaluesi=0; pvaluesi<pvalues.length; pvaluesi++) {
-		
-			int pvaluesi = 0; //can't make new p2p every time (port 7500 is still in use)
-
-			joinedNodes = new ArrayList<Integer>();
-			
-			p2p.sleep(1000);
-			
-			//Phase 1: add p nodes to system
-			for (int pi=0; pi<pvalues[pvaluesi]; pi++) {
-				int randid = r.nextInt(Node.bound);
-				joinedNodes.add(randid);
-				
-				try {
-					dataout.write("Phase 1 with p="+pvalues[pvaluesi]+", join "+randid+"\n");
-					dataout.flush();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-
-			}
-
-			//Phase 2: perform find F times
-			for (int fi=0; fi<f; fi++) {
-				int randidx = r.nextInt(joinedNodes.size());
-				int p = joinedNodes.get(randidx);
-				int k = r.nextInt(Node.bound);
-				
-				try {
-					dataout.write("Phase 2 with p="+pvalues[pvaluesi]+", find "+p+" "+k+"\n");
-					dataout.flush();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				
-			}
-			
-			System.out.println("Done with p = "+pvalues[pvaluesi]);
-
-//		}
-*/
-
 	}
-	
-	private void sleep(long millis) {
-		try {
-			Thread.sleep(millis);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-	}
-	
 
+
+	/*
+	 * PeerToPeerLookupService constructor
+	 * A filename to write show command output to may be in args parameter
+	 */
 	public PeerToPeerLookupService(String[] args) {
 		
 		this.out = new BufferedWriter(new OutputStreamWriter(System.out));
@@ -196,15 +57,18 @@ public class PeerToPeerLookupService {
 			
 		}
 		
-		nodes = new ArrayList<Node>();
-		messageCount = 0;
+		this.nodes = new ArrayList<Node>();
+		this.messageCount = 0;
 
 	}
 	
 	
+	/*
+	 * Start the system running (initialize node 0) after PeerToPeer
+	 * member variables have been initialized
+	 */
 	public void start() {
 
-		//indicate to Node that it doesn't join normally
 		Node nprime = new Node(0, this);
 		nodes.add(nprime);
 		
@@ -213,12 +77,14 @@ public class PeerToPeerLookupService {
 		
 	}
 	
+	
 	/*
 	 * Method used by any Node to send a message through sockets
 	 * Eliminates confusion about sockets closing on one or both ends
 	 * sendId = sender's ID/Source, recvID = receipient/Destination  
 	 */
 	protected synchronized int send(String msg, int sendId, int recvId) {
+		
 		int ret = -1;
 		
 		//Check to see that node id exists in system
@@ -231,7 +97,6 @@ public class PeerToPeerLookupService {
 			}
 		}
 		if (nodeIdx == -1) {
-//			System.out.println("Node with id "+recvId+" does not exist in the system; try again");
 			return -1;
 		}
 		
@@ -239,37 +104,20 @@ public class PeerToPeerLookupService {
 		PrintWriter outs = null;
 		
 		try {
-			socket = new Socket("127.0.0.1",7500+recvId); //this generated an error!
-			//socket.setReuseAddress(true); //Needed for re-using sockets
-			//socket.bind(new InetSocketAddress());
-			//the 6th node to get added had an error trying to send a message in join
+			socket = new Socket("127.0.0.1",7500+recvId);
 			outs = new PrintWriter(socket.getOutputStream(), true);
 			outs.println(msg);
 			ret = 0;
 			messageCount++;
 
 		} catch (Exception e) {
-			System.out.println("Failed to connect to node "+recvId);
-			e.printStackTrace();
-			if (socket != null) {
-				try {
-					socket.close();
-					socket = null;
-				} catch (IOException e1) {}
-			}
-			if (outs != null) {
-				outs.close();
-				outs = null;
-			}
 			ret = -1;
 		}
 				
 		if (socket != null) {
 			try {
 				socket.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			} catch (IOException e) {}
 		}
 		if (outs != null)
 			outs.close();
@@ -284,10 +132,9 @@ public class PeerToPeerLookupService {
 	 * this to mean that the interval is (0,256)
 	 */
 	protected boolean insideInterval(int x, int a, int b) {
-		if (a == b) {
-//			System.out.println("very special case, "+x+" is not in ("+a+","+b+")"); //just for debugging
+		if (a == b)
 			return (x != a); //if x is on the boundary
-		}
+		
 		if (b < a) { //a < 2^m && b >= 0
 			
 			if (x < a)
