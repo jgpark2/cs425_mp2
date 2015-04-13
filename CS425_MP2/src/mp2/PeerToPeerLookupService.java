@@ -41,7 +41,8 @@ public class PeerToPeerLookupService {
 		PeerToPeerLookupService p2p = new PeerToPeerLookupService(args);
 
 		p2p.start();
-		
+
+/*
 		//Performance evaluation, F = 70
 		p2p.sleep(250); //give a little bit of time for system to initialize
 		
@@ -57,6 +58,7 @@ public class PeerToPeerLookupService {
 			e.printStackTrace();
 			dataout = new BufferedWriter(new OutputStreamWriter(System.out));
 		}
+*/
 		
 /*
 		for (int pvaluesi=0; pvaluesi<pvalues.length; pvaluesi++) {
@@ -113,7 +115,7 @@ public class PeerToPeerLookupService {
 		}
 */
 		
-
+/*
 		//Loop to tell us what values to join and find
 //		for (int pvaluesi=0; pvaluesi<pvalues.length; pvaluesi++) {
 		
@@ -155,7 +157,7 @@ public class PeerToPeerLookupService {
 			System.out.println("Done with p = "+pvalues[pvaluesi]);
 
 //		}
-
+*/
 
 	}
 	

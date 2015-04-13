@@ -75,7 +75,8 @@ public class Coordinator extends Thread {
 					}
 				}
 				
-				else if (cmd.lastIndexOf("show all") == 0) { //show all
+				else if (cmd.lastIndexOf("show all") == 0 //Piazza post @395 implies both should be supported
+						|| cmd.lastIndexOf("show-all") == 0) { //show all
 					showall();
 				}
 				
@@ -226,7 +227,6 @@ public class Coordinator extends Thread {
 	/*
 	 * Coordinator has been asked to ask node with parameter id to leave the
 	 * system; all transfer of keys and administrative work is done by Node
-	 * TODO:
 	 * Once the proper procedure has finished, Node must mark cmdComplete
 	 * as true
 	 */
