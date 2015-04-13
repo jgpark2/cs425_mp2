@@ -1,5 +1,0 @@
-To compile MP2 code:
-
-
-To run MP2 code:
-

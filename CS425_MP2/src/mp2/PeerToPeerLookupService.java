@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 /*
- * TODO: give instructions on how to run this code in cs425_mp2/instructions.txt
+ * TODO: give instructions on how to run this code in cs425_mp2/mp2report.txt
  */
 public class PeerToPeerLookupService {
 	
@@ -42,15 +42,14 @@ public class PeerToPeerLookupService {
 
 		p2p.start();
 
-/*
+
 		//Performance evaluation, F = 70
 		p2p.sleep(250); //give a little bit of time for system to initialize
 		
 		int [] pvalues = {4,8,10,20,30};
-		ArrayList<Integer> joinedNodes = new ArrayList<Integer>();
+		ArrayList<Integer> joinedNodes;
 		int f = 70;
 		BufferedWriter dataout;
-		Random r = new Random(2); //this seed will be changed by hand for each n=10 runs
 		try {
 			dataout = new BufferedWriter(new PrintWriter("experiment.txt"));
 		} catch (FileNotFoundException e) {
@@ -58,29 +57,41 @@ public class PeerToPeerLookupService {
 			e.printStackTrace();
 			dataout = new BufferedWriter(new OutputStreamWriter(System.out));
 		}
-*/
+		Random r = new Random(10); //this seed will be changed by hand for each n=10 runs
+		try {
+			dataout.write("Random is 10, the 10th round of N"+"\n");
+			dataout.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		
-/*
-		for (int pvaluesi=0; pvaluesi<pvalues.length; pvaluesi++) {
+
+//		for (int pvaluesi=0; pvaluesi<pvalues.length; pvaluesi++) {
+		
+			int pvaluesi = 0; //can't make new p2p every time (port 7500 is still in use)
 
 			joinedNodes = new ArrayList<Integer>();
 			
-			p2p.sleep(1000);
+			p2p.sleep(250);
 			
 			p2p.messageCount = 0; //reset message count for phase 1
 			
 			//Phase 1: add p nodes to system
 			for (int pi=0; pi<pvalues[pvaluesi]; pi++) {
-				int randid = r.nextInt(Node.bound);
 				
-				p2p.coord.join(randid);
+				int success = -1;
+				int randid = 0;
+				while (success < 0) { //make sure we don't have a repeated id
+					randid = r.nextInt(Node.bound);
+					success = p2p.coord.join(randid);
+				}
+				
 				joinedNodes.add(randid);
 				
-				p2p.sleep(1000); //emulate human typing delay, since cmdComplete isn't being used
+				p2p.sleep(250); //emulate human typing delay, since cmdComplete isn't being used
 			}
 			
 			//Count the number of messages in Phase 1
-			System.out.println("Phase 1 message count with p="+pvalues[pvaluesi]+": "+p2p.messageCount);
 			try {
 				dataout.write("Phase 1 message count with p="+pvalues[pvaluesi]+": "+p2p.messageCount+"\n");
 				dataout.flush();
@@ -98,11 +109,10 @@ public class PeerToPeerLookupService {
 				
 				p2p.coord.find(p, k);
 				
-				p2p.sleep(1000); //emulate human typing delay, since cmdComplete isn't being used
+				p2p.sleep(250); //emulate human typing delay, since cmdComplete isn't being used
 			}
 			
 			//Count the number of messages in Phase 2
-			System.out.println("Phase 2 message count with p="+pvalues[pvaluesi]+": "+p2p.messageCount);
 			try {
 				dataout.write("Phase 2 message count with p="+pvalues[pvaluesi]+": "+p2p.messageCount+"\n");
 				dataout.flush();
@@ -112,8 +122,8 @@ public class PeerToPeerLookupService {
 			
 			System.out.println("Done with p = "+pvalues[pvaluesi]);
 			
-		}
-*/
+//		}
+
 		
 /*
 		//Loop to tell us what values to join and find

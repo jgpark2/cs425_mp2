@@ -12,7 +12,6 @@ public class AlgorithmWaitingThread extends Thread {
 	//message to return to the requesting node, if any
 	private String retMessage;
 	
-	private String origMessage;
 	private String [] origMessageWords;
 
 	
@@ -24,8 +23,6 @@ public class AlgorithmWaitingThread extends Thread {
 		this.node = node;
 		this.nodeId = node.getNodeId();
 		this.algorithm = algorithm;
-		this.origMessage = message;
-		
 		String[] words = message.split("\\s+");
 		this.origMessageWords = words;
 		
