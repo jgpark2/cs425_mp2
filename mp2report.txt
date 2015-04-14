@@ -2,8 +2,22 @@ Laura Galbraith, galbrth2
 Jonathan Park, jgpark2
 
 Instructions for how to compile and run code:
-In cs425_mp2 directory:
+In galbrth2_jgpark2_mp2 directory:
  > java -cp CS425_MP2/bin/ mp2.PeerToPeerLookupService
+--- or ---
+ > sh run_mp2.sh
+To run with output text argument, in galbrth2_jgpark2_mp2 directory:
+ > java -cp CS425_MP2/bin/ mp2.PeerToPeerLookupService -g filename
+
+
+Chord Implementation
+The main class, PeerToPeerLookupService starts a Chord-like system with an
+initial node 0 that is used to initialize all nodes upon join. Nodes are
+represented as Node thread objects, which each use a Server class to set up socket
+connections and pass messages along those sockets using a send method in the
+PeerToPeerLookupService class. The Chord algorithms such
+as join, find_successor, find_predecessor, and leave are supported in the Node
+class code.
 
 
 Performance Data
